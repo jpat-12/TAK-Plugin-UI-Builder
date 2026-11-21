@@ -8,6 +8,10 @@ using the existing per-platform templates.
 
 Built for public-safety people and vibecoders as much as for developers.
 
+**Use it online:** https://jpat-12.github.io/TAK-Plugin-UI-Builder/ (deployed from `main` by
+`.github/workflows/pages.yml`). Your designs autosave in your own browser; ✨ Describe… uses
+your own Claude API key, entered in the browser and never sent anywhere but the API.
+
 > **Status (2026-11-10): Phases 0–4 done.** You can describe, design, generate and hand off a plugin:
 > - **✨ Describe…**: say what a screen should do in plain words and Claude (claude-opus-5-5) drafts it,
 >   using your own Anthropic API key (kept in your browser)
