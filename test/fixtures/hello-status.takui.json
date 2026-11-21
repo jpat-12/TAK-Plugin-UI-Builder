@@ -1,0 +1,55 @@
+{
+  "spec": "takui/v1",
+  "meta": {
+    "name": "Hello Status",
+    "packageId": "org.example.hellostatus",
+    "version": "0.0.1",
+    "description": "Illustrative demo: pick your status and send it to the team as a CoT.",
+    "targets": ["atak"]
+  },
+  "state": [
+    {
+      "key": "myStatus",
+      "label": "My status",
+      "type": "enum",
+      "options": [
+        { "value": "available", "label": "Available", "color": "#16A34A" },
+        { "value": "busy", "label": "Busy", "color": "#D97706" },
+        { "value": "oos", "label": "Out of Service", "color": "#6B7280" }
+      ],
+      "default": "available",
+      "persisted": true
+    },
+    { "key": "note", "label": "Note", "type": "string", "default": "" }
+  ],
+  "actions": [
+    {
+      "id": "send-status",
+      "label": "Send status",
+      "intent": "Send a CoT to All Chat Rooms containing my callsign, myStatus and note, then show a toast 'Status sent'.",
+      "kind": "cot-send"
+    }
+  ],
+  "entry": { "label": "Status", "icon": "status flag", "openScreen": "main" },
+  "screens": [
+    {
+      "id": "main",
+      "title": "Hello Status",
+      "surface": "pane",
+      "root": {
+        "id": "main-root",
+        "kind": "container",
+        "type": "stack",
+        "props": { "gap": 12 },
+        "children": [
+          { "id": "title", "kind": "element", "type": "heading", "props": { "text": "My status" } },
+          { "id": "me", "kind": "element", "type": "callsign", "props": {} },
+          { "id": "status-badge", "kind": "element", "type": "status-badge", "props": { "size": "large" }, "bind": "myStatus" },
+          { "id": "status-pick", "kind": "element", "type": "radio-group", "props": { "label": "Set status" }, "bind": "myStatus" },
+          { "id": "note-input", "kind": "element", "type": "text-input", "props": { "label": "Note", "placeholder": "Optional" }, "bind": "note" },
+          { "id": "send", "kind": "element", "type": "button", "props": { "text": "Send", "fullWidth": true }, "on": { "click": "send-status" } }
+        ]
+      }
+    }
+  ]
+}

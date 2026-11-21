@@ -1,0 +1,90 @@
+{
+  "spec": "takui/v1",
+  "meta": {
+    "name": "Server Connection",
+    "packageId": "org.example.serverconnect",
+    "version": "0.0.1",
+    "description": "Connect a plugin to an outside web service: a status pane plus a settings screen for the address and sign-in.",
+    "targets": ["atak", "cloudtak"]
+  },
+  "state": [
+    { "key": "serverUrl", "label": "Server address", "type": "string", "persisted": true },
+    { "key": "username", "label": "Username", "type": "string", "persisted": true },
+    { "key": "apiKey", "label": "API key", "type": "string", "persisted": true, "description": "Store securely; never log it and never bundle it in the build." },
+    { "key": "autoConnect", "label": "Connect on startup", "type": "boolean", "default": true, "persisted": true },
+    {
+      "key": "connection",
+      "label": "Connection",
+      "type": "enum",
+      "options": [
+        { "value": "disconnected", "label": "Not connected", "color": "#6B7280" },
+        { "value": "connecting", "label": "Connecting", "color": "#D97706" },
+        { "value": "connected", "label": "Connected", "color": "#16A34A" },
+        { "value": "failed", "label": "Failed", "color": "#DC2626" }
+      ],
+      "default": "disconnected"
+    },
+    { "key": "lastError", "label": "Last error", "type": "string" }
+  ],
+  "actions": [
+    { "id": "connect", "label": "Connect", "intent": "Sign in to serverUrl with username and apiKey; set connection to Connecting, then Connected or Failed (with the reason in lastError).", "kind": "http", "params": { "method": "POST" } },
+    { "id": "disconnect", "label": "Disconnect", "intent": "Close the session and set connection to Not connected.", "kind": "custom" },
+    { "id": "open-settings", "label": "Open settings", "intent": "Open the connection settings screen.", "kind": "navigate", "params": { "screen": "settings" } }
+  ],
+  "entry": { "label": "Connect", "icon": "plug", "openScreen": "status" },
+  "screens": [
+    {
+      "id": "status",
+      "title": "Server Connection",
+      "surface": "pane",
+      "root": {
+        "id": "status-root",
+        "kind": "container",
+        "type": "stack",
+        "props": { "gap": 12 },
+        "children": [
+          {
+            "id": "status-row",
+            "kind": "container",
+            "type": "row",
+            "props": { "gap": 10 },
+            "children": [
+              { "id": "status-badge", "kind": "element", "type": "status-badge", "props": { "size": "large" }, "bind": "connection" },
+              { "id": "status-url", "kind": "element", "type": "label", "props": { "muted": true }, "bind": "serverUrl" }
+            ]
+          },
+          { "id": "status-error", "kind": "element", "type": "label", "props": {}, "bind": "lastError", "visibleWhen": { "key": "connection", "op": "eq", "value": "failed" } },
+          {
+            "id": "status-buttons",
+            "kind": "container",
+            "type": "row",
+            "props": { "gap": 8 },
+            "children": [
+              { "id": "connect-btn", "kind": "element", "type": "button", "props": { "text": "Connect" }, "on": { "click": "connect" }, "visibleWhen": { "key": "connection", "op": "neq", "value": "connected" } },
+              { "id": "disconnect-btn", "kind": "element", "type": "button", "props": { "text": "Disconnect", "style": "secondary" }, "on": { "click": "disconnect" }, "visibleWhen": { "key": "connection", "op": "eq", "value": "connected" } },
+              { "id": "settings-btn", "kind": "element", "type": "button", "props": { "text": "Settings", "style": "subtle" }, "on": { "click": "open-settings" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "settings",
+      "title": "Connection settings",
+      "surface": "settings",
+      "root": {
+        "id": "settings-root",
+        "kind": "container",
+        "type": "stack",
+        "props": { "gap": 10 },
+        "children": [
+          { "id": "url-input", "kind": "element", "type": "text-input", "props": { "label": "Server address", "placeholder": "https://example.org", "required": true }, "bind": "serverUrl" },
+          { "id": "user-input", "kind": "element", "type": "text-input", "props": { "label": "Username" }, "bind": "username" },
+          { "id": "key-input", "kind": "element", "type": "text-input", "props": { "label": "API key" }, "bind": "apiKey" },
+          { "id": "auto-input", "kind": "element", "type": "toggle", "props": { "label": "Connect on startup" }, "bind": "autoConnect" },
+          { "id": "test-btn", "kind": "element", "type": "button", "props": { "text": "Test connection", "style": "secondary" }, "on": { "click": "connect" } }
+        ]
+      }
+    }
+  ]
+}

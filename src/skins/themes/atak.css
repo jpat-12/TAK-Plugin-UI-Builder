@@ -1,0 +1,11 @@
+/* ATAK: dark Holo-style drop-down panes, underlined inputs, uppercase tab/section labels.
+   Always dark: ATAK has no light theme to mirror. Approximate. */
+.skin-atak {
+  --k-font: 14px/1.35 Roboto, 'Segoe UI', system-ui, sans-serif;
+  --k-bg: #1c1c1c; --k-bg2: #262626; --k-fg: #f2f2f2; --k-fg2: #a8a8a8; --k-line: #3a3a3a; --k-placeholder: #6d6d6d;
+  --k-accent: #33b5e5; --k-radius: 3px; --k-caps: uppercase;
+  --k-btn: #3d3d3d; --k-btn-border: #555; --k-primary: #2c5f73; --k-primary-border: #33b5e5; --k-primary-fg: #fff;
+  --k-danger: #c62828; --k-track: #555; --k-th: #33b5e5;
+  --k-tabbar: #111; --k-head: #2e2e2e; --k-titlebar: #111; --k-title-line: #33b5e5;
+}
+.skin-atak .d-buttons { gap: 24px; color: var(--k-accent); font-size: 13px; font-weight: 600; }

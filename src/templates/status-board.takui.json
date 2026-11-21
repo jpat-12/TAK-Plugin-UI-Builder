@@ -1,0 +1,119 @@
+{
+  "spec": "takui/v1",
+  "meta": {
+    "name": "Team Status Board",
+    "packageId": "org.example.statusboard",
+    "version": "0.0.1",
+    "description": "Everyone sets their status; the board shows the whole team with color-coded badges.",
+    "targets": ["atak", "cloudtak"]
+  },
+  "state": [
+    {
+      "key": "myStatus",
+      "label": "My status",
+      "type": "enum",
+      "options": [
+        { "value": "available", "label": "Available", "color": "#16A34A" },
+        { "value": "assigned", "label": "Assigned", "color": "#2563EB" },
+        { "value": "busy", "label": "Busy", "color": "#D97706" },
+        { "value": "offline", "label": "Off duty", "color": "#6B7280" }
+      ],
+      "default": "available",
+      "persisted": true
+    },
+    { "key": "myNote", "label": "Note", "type": "string", "default": "" },
+    {
+      "key": "team",
+      "label": "Team",
+      "type": "list",
+      "description": "Built from status reports received from other devices.",
+      "itemFields": [
+        { "key": "member", "type": "contact" },
+        {
+          "key": "status",
+          "type": "enum",
+          "options": [
+            { "value": "available", "label": "Available", "color": "#16A34A" },
+            { "value": "assigned", "label": "Assigned", "color": "#2563EB" },
+            { "value": "busy", "label": "Busy", "color": "#D97706" },
+            { "value": "offline", "label": "Off duty", "color": "#6B7280" }
+          ]
+        },
+        { "key": "note", "type": "string" },
+        { "key": "updated", "type": "datetime" },
+        { "key": "location", "type": "point" }
+      ]
+    }
+  ],
+  "actions": [
+    { "id": "send-status", "label": "Send my status", "intent": "Broadcast my status and note to the team as a CoT event; update my own row on the board.", "kind": "cot-send" },
+    { "id": "focus-member", "label": "Show member", "intent": "Pan the map to the tapped team member's last known location.", "kind": "custom" }
+  ],
+  "entry": { "label": "Status", "icon": "people with check mark", "openScreen": "board" },
+  "screens": [
+    {
+      "id": "board",
+      "title": "Team Status",
+      "surface": "pane",
+      "root": {
+        "id": "board-root",
+        "kind": "container",
+        "type": "stack",
+        "props": { "gap": 10 },
+        "children": [
+          {
+            "id": "me-section",
+            "kind": "container",
+            "type": "section",
+            "props": { "title": "Me" },
+            "children": [
+              {
+                "id": "me-row",
+                "kind": "container",
+                "type": "row",
+                "props": { "gap": 10 },
+                "children": [
+                  { "id": "me-callsign", "kind": "element", "type": "callsign", "props": {} },
+                  { "id": "me-badge", "kind": "element", "type": "status-badge", "props": {}, "bind": "myStatus" }
+                ]
+              },
+              { "id": "me-status", "kind": "element", "type": "dropdown", "props": { "label": "Set status" }, "bind": "myStatus" },
+              { "id": "me-note", "kind": "element", "type": "text-input", "props": { "label": "Note", "placeholder": "Optional, e.g. at the north gate" }, "bind": "myNote" },
+              { "id": "me-send", "kind": "element", "type": "button", "props": { "text": "Update status", "fullWidth": true }, "on": { "click": "send-status" } }
+            ]
+          },
+          {
+            "id": "team-section",
+            "kind": "container",
+            "type": "section",
+            "props": { "title": "Team" },
+            "children": [
+              {
+                "id": "team-list",
+                "kind": "container",
+                "type": "list",
+                "props": { "emptyText": "No one has reported yet" },
+                "bind": "team",
+                "on": { "itemClick": "focus-member" },
+                "children": [
+                  {
+                    "id": "team-row",
+                    "kind": "container",
+                    "type": "row",
+                    "props": { "gap": 8 },
+                    "children": [
+                      { "id": "team-badge", "kind": "element", "type": "status-badge", "props": {}, "bind": "$item.status" },
+                      { "id": "team-callsign", "kind": "element", "type": "callsign", "props": {}, "bind": "$item.member" },
+                      { "id": "team-note", "kind": "element", "type": "label", "props": { "muted": true }, "bind": "$item.note" },
+                      { "id": "team-time", "kind": "element", "type": "label", "props": { "muted": true }, "bind": "$item.updated" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

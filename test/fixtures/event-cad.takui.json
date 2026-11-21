@@ -1,0 +1,222 @@
+{
+  "spec": "takui/v1",
+  "meta": {
+    "name": "Event CAD",
+    "packageId": "org.example.eventcad",
+    "version": "0.0.1",
+    "description": "Illustrative demo modeled on IU Event CAD's shape (stadium medical dispatch). No real mission data.",
+    "author": "Demo",
+    "targets": ["atak", "cloudtak"]
+  },
+  "state": [
+    {
+      "key": "myStatus",
+      "label": "My status",
+      "type": "enum",
+      "options": [
+        { "value": "available", "label": "Available", "color": "#16A34A" },
+        { "value": "responding", "label": "Responding", "color": "#2563EB" },
+        { "value": "onscene", "label": "On Scene", "color": "#D97706" },
+        { "value": "transporting", "label": "Transporting", "color": "#7C3AED" },
+        { "value": "oos", "label": "Out of Service", "color": "#6B7280" }
+      ],
+      "default": "available",
+      "persisted": true,
+      "description": "Rides on the device's normal position report."
+    },
+    { "key": "isDispatcher", "label": "Dispatcher mode", "type": "boolean", "default": false, "persisted": true },
+    {
+      "key": "incidents",
+      "label": "Incidents",
+      "type": "list",
+      "itemFields": [
+        { "key": "title", "type": "string" },
+        {
+          "key": "priority",
+          "type": "enum",
+          "options": [
+            { "value": "p1", "label": "P1 Critical", "color": "#DC2626" },
+            { "value": "p2", "label": "P2 Urgent", "color": "#D97706" },
+            { "value": "p3", "label": "P3 Routine", "color": "#16A34A" }
+          ]
+        },
+        { "key": "location", "type": "point" },
+        { "key": "floor", "type": "string" },
+        { "key": "assigned", "type": "contact" },
+        { "key": "opened", "type": "datetime" }
+      ]
+    },
+    {
+      "key": "units",
+      "label": "Units",
+      "type": "list",
+      "itemFields": [
+        { "key": "unit", "type": "contact" },
+        {
+          "key": "status",
+          "type": "enum",
+          "options": [
+            { "value": "available", "label": "Available", "color": "#16A34A" },
+            { "value": "responding", "label": "Responding", "color": "#2563EB" },
+            { "value": "onscene", "label": "On Scene", "color": "#D97706" },
+            { "value": "transporting", "label": "Transporting", "color": "#7C3AED" },
+            { "value": "oos", "label": "Out of Service", "color": "#6B7280" }
+          ]
+        },
+        { "key": "distance", "type": "string" },
+        { "key": "walkTime", "type": "string" }
+      ]
+    },
+    { "key": "draftType", "label": "Incident type", "type": "string" },
+    {
+      "key": "draftPriority",
+      "label": "Priority",
+      "type": "enum",
+      "options": [
+        { "value": "p1", "label": "P1" },
+        { "value": "p2", "label": "P2" },
+        { "value": "p3", "label": "P3" }
+      ],
+      "default": "p2"
+    },
+    { "key": "draftLocation", "label": "Location", "type": "point" },
+    { "key": "draftFloor", "label": "Floor", "type": "string" },
+    { "key": "draftW3w", "label": "what3words", "type": "string" },
+    { "key": "draftNotes", "label": "Notes", "type": "string" },
+    { "key": "w3wKey", "label": "what3words API key", "type": "string", "persisted": true, "description": "Optional. Never bundle a key in the build." }
+  ],
+  "actions": [
+    { "id": "set-status", "label": "Update my status", "intent": "Attach myStatus to my outgoing position report so other devices color my icon.", "kind": "cot-send" },
+    { "id": "open-new-incident", "label": "New incident", "intent": "Open the new-incident form with a blank draft.", "kind": "navigate", "params": { "screen": "new-incident" } },
+    { "id": "create-incident", "label": "Create incident", "intent": "Validate type + location, add an incident built from the draft* fields to incidents, broadcast it as CoT, return to the main pane.", "kind": "cot-send" },
+    { "id": "open-incident", "label": "Open incident", "intent": "Show the tapped incident's details, ranking units by distance and walking time from its location.", "kind": "custom" },
+    { "id": "assign-unit", "label": "Assign unit", "intent": "Assign the tapped unit to the open incident; send that unit's device an alert CoT.", "kind": "cot-send" },
+    { "id": "pick-location", "label": "Pick location", "intent": "Let the user tap the map; store the point in draftLocation and look up its what3words address if a key is set.", "kind": "map-pick" }
+  ],
+  "entry": { "label": "Event CAD", "icon": "ambulance", "openScreen": "main" },
+  "screens": [
+    {
+      "id": "main",
+      "title": "Event CAD",
+      "surface": "pane",
+      "root": {
+        "id": "main-tabs",
+        "kind": "container",
+        "type": "tabs",
+        "props": {},
+        "children": [
+          {
+            "id": "tab-incidents",
+            "kind": "container",
+            "type": "section",
+            "props": { "title": "Incidents" },
+            "children": [
+              {
+                "id": "incidents-toolbar",
+                "kind": "container",
+                "type": "row",
+                "props": { "align": "center" },
+                "visibleWhen": { "key": "isDispatcher", "op": "truthy" },
+                "children": [
+                  { "id": "new-incident-btn", "kind": "element", "type": "button", "props": { "text": "+ New incident" }, "on": { "click": "open-new-incident" } }
+                ]
+              },
+              {
+                "id": "incident-list",
+                "kind": "container",
+                "type": "list",
+                "props": { "emptyText": "No open incidents" },
+                "bind": "incidents",
+                "on": { "itemClick": "open-incident" },
+                "children": [
+                  {
+                    "id": "incident-row",
+                    "kind": "container",
+                    "type": "row",
+                    "props": { "gap": 8 },
+                    "children": [
+                      { "id": "incident-priority", "kind": "element", "type": "status-badge", "props": {}, "bind": "$item.priority" },
+                      { "id": "incident-title", "kind": "element", "type": "label", "props": {}, "bind": "$item.title" },
+                      { "id": "incident-floor", "kind": "element", "type": "label", "props": { "muted": true }, "bind": "$item.floor" },
+                      { "id": "incident-show", "kind": "element", "type": "open-on-map", "props": { "text": "Map" }, "bind": "$item.location" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "tab-units",
+            "kind": "container",
+            "type": "section",
+            "props": { "title": "Units" },
+            "children": [
+              {
+                "id": "unit-table",
+                "kind": "element",
+                "type": "table",
+                "props": { "columns": ["unit", "status", "distance", "walkTime"] },
+                "bind": "units",
+                "on": { "rowClick": "assign-unit" },
+                "targetOverrides": { "atak": { "props": { "emptyText": "No units checked in" } } }
+              }
+            ]
+          },
+          {
+            "id": "tab-me",
+            "kind": "container",
+            "type": "section",
+            "props": { "title": "My Status" },
+            "children": [
+              { "id": "me-callsign", "kind": "element", "type": "callsign", "props": {} },
+              { "id": "me-status-pick", "kind": "element", "type": "radio-group", "props": { "label": "Status" }, "bind": "myStatus", "on": { "change": "set-status" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "new-incident",
+      "title": "New incident",
+      "surface": "dialog",
+      "root": {
+        "id": "new-incident-form",
+        "kind": "container",
+        "type": "scroll",
+        "props": {},
+        "children": [
+          {
+            "id": "new-incident-stack",
+            "kind": "container",
+            "type": "stack",
+            "props": { "gap": 10 },
+            "children": [
+              { "id": "ni-type", "kind": "element", "type": "dropdown", "props": { "label": "Type", "options": ["Fall", "Cardiac", "Heat", "Allergic", "Other"] }, "bind": "draftType" },
+              { "id": "ni-priority", "kind": "element", "type": "radio-group", "props": { "label": "Priority", "horizontal": true }, "bind": "draftPriority" },
+              { "id": "ni-location", "kind": "element", "type": "map-point-picker", "props": { "label": "Location" }, "bind": "draftLocation", "on": { "change": "pick-location" } },
+              { "id": "ni-floor", "kind": "element", "type": "text-input", "props": { "label": "Floor / section" }, "bind": "draftFloor" },
+              { "id": "ni-w3w", "kind": "element", "type": "text-input", "props": { "label": "what3words", "placeholder": "///word.word.word" }, "bind": "draftW3w" },
+              { "id": "ni-notes", "kind": "element", "type": "text-area", "props": { "label": "Notes" }, "bind": "draftNotes" },
+              { "id": "ni-create", "kind": "element", "type": "button", "props": { "text": "Create incident", "fullWidth": true }, "on": { "click": "create-incident" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "settings",
+      "title": "Event CAD settings",
+      "surface": "settings",
+      "root": {
+        "id": "settings-stack",
+        "kind": "container",
+        "type": "stack",
+        "props": {},
+        "children": [
+          { "id": "set-dispatcher", "kind": "element", "type": "toggle", "props": { "label": "Dispatcher mode" }, "bind": "isDispatcher" },
+          { "id": "set-w3w", "kind": "element", "type": "text-input", "props": { "label": "what3words API key" }, "bind": "w3wKey" }
+        ]
+      }
+    }
+  ]
+}

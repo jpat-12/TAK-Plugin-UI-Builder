@@ -1,0 +1,80 @@
+/* Shared structure for every preview skin. Scoped under .skin so it never leaks into the
+   builder chrome. Platforms differ only through the --k-* variables and the few overrides in
+   themes/<target>.css. If a platform needs different MARKUP, that's a sign the element
+   renderer needs a variant, not a CSS hack. */
+.skin {
+  background: var(--k-bg); color: var(--k-fg); font: var(--k-font);
+}
+.skin button { font: inherit; color: inherit; }
+
+.k-h { margin: 0; font-weight: 600; } .k-h.l1 { font-size: 1.43em; } .k-h.l2 { font-size: 1.2em; }
+.k-h.l3 { font-size: 1em; color: var(--k-accent); text-transform: var(--k-caps); letter-spacing: .03em; }
+.k-text { margin: 0; } .k-text.muted { color: var(--k-fg2); font-size: .93em; }
+
+.k-btn { background: var(--k-btn); border: 1px solid var(--k-btn-border); border-radius: var(--k-radius); padding: 7px 14px; cursor: default; white-space: nowrap; }
+.k-btn.primary { background: var(--k-primary); border-color: var(--k-primary-border); color: var(--k-primary-fg); }
+.k-btn.danger { background: var(--k-danger); border-color: var(--k-danger); color: #fff; }
+.k-btn.subtle { background: transparent; border-color: transparent; color: var(--k-accent); }
+.k-btn.full { width: 100%; }
+.k-iconbtn { width: 40px; height: 40px; background: var(--k-btn); border: 1px solid var(--k-btn-border); border-radius: var(--k-radius); position: relative; }
+.k-iconbtn .hint { position: absolute; left: 0; right: 0; bottom: -14px; font-size: 9px; color: var(--k-fg2); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+.k-field { display: flex; flex-direction: column; gap: 3px; }
+.k-lbl { font-size: .86em; color: var(--k-fg2); padding: 0; margin: 0; } .k-lbl em { color: var(--k-accent); font-style: normal; margin-left: 4px; }
+/* inputs: underline style by default (ATAK); boxed skins override .k-edit/.k-spinner */
+.k-edit { display: flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 2px; border-bottom: 2px solid var(--k-accent); }
+.k-edit.area { align-items: flex-start; border: 1px solid var(--k-line); border-bottom: 2px solid var(--k-accent); padding: 6px; }
+.k-edit.mono { font-family: ui-monospace, Consolas, monospace; }
+.k-edit.grow { flex: 1; }
+.k-edit .unit { margin-left: auto; color: var(--k-fg2); font-style: normal; }
+.ph { color: var(--k-placeholder); }
+.swatch { width: 18px; height: 18px; background: #ff3b30; border-radius: 2px; display: inline-block; }
+.k-spinner { display: flex; justify-content: space-between; align-items: center; min-height: 32px; padding: 4px 2px; border-bottom: 1px solid var(--k-fg2); }
+.k-spinner b { font-size: 9px; color: var(--k-fg2); }
+.k-row { display: flex; gap: 8px; align-items: center; }
+
+.k-check { display: flex; align-items: center; gap: 10px; min-height: 32px; }
+.k-check.toggle { justify-content: space-between; }
+.box { width: 18px; height: 18px; border: 2px solid var(--k-fg2); border-radius: calc(var(--k-radius) / 2 + 1px); }
+.box.on { background: var(--k-accent); border-color: var(--k-accent); }
+.sw { width: 36px; height: 14px; border-radius: 7px; background: var(--k-track); position: relative; }
+.sw::after { content: ''; position: absolute; top: -4px; left: -2px; width: 22px; height: 22px; border-radius: 50%; background: #bdbdbd; }
+.sw.on { background: color-mix(in srgb, var(--k-accent) 55%, #000); } .sw.on::after { left: 16px; background: var(--k-accent); }
+.k-radio { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.k-radio.h { flex-direction: row; flex-wrap: wrap; gap: 14px; } .k-radio.h legend { width: 100%; margin-bottom: 4px; }
+.k-radio label { display: flex; align-items: center; gap: 8px; min-height: 28px; }
+.dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--k-fg2); }
+.dot.on { border-color: var(--k-accent); box-shadow: inset 0 0 0 3px var(--k-bg), inset 0 0 0 8px var(--k-accent); }
+
+.k-slider { height: 4px; background: var(--k-track); border-radius: 2px; position: relative; margin: 10px 0; display: block; }
+.k-slider i { position: absolute; left: 40%; top: -7px; width: 18px; height: 18px; border-radius: 50%; background: var(--k-accent); }
+.k-progress { height: 6px; background: var(--k-track); border-radius: 3px; overflow: hidden; display: block; }
+.k-progress i { display: block; height: 100%; background: var(--k-accent); }
+.k-hr { border: 0; border-top: 1px solid var(--k-line); margin: 2px 0; width: 100%; }
+.k-img { display: flex; align-items: center; justify-content: center; background: var(--k-bg2); border: 1px dashed var(--k-line); color: var(--k-fg2); font-size: 12px; border-radius: var(--k-radius); }
+.k-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: .86em; font-weight: 600; color: #fff; white-space: nowrap; align-self: flex-start; }
+.k-badge.large { padding: 6px 14px; font-size: 1.07em; border-radius: var(--k-radius); }
+.k-empty { text-align: center; color: var(--k-fg2); padding: 18px 8px; font-style: italic; }
+
+.k-table { width: 100%; border-collapse: collapse; font-size: .93em; }
+.k-table th { text-align: left; color: var(--k-th); font-weight: 600; border-bottom: 1px solid var(--k-th); padding: 4px; }
+.k-table td { border-bottom: 1px solid var(--k-line); padding: 6px 4px; }
+
+.k-callsign { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.team { width: 12px; height: 12px; background: #00bcd4; border: 1px solid #fff; display: inline-block; }
+.k-mapitem { display: flex; justify-content: space-between; gap: 8px; width: 100%; text-align: left; background: var(--k-bg2); border: 1px solid var(--k-line); padding: 8px; border-radius: var(--k-radius); }
+.k-mapitem em { color: var(--k-fg2); font-style: normal; font-size: 12px; }
+.k-unknown { color: #ff8a80; font-style: italic; }
+
+/* containers (laid out by the canvas, styled here) */
+.skin .c-section { border: 1px solid var(--k-line); border-radius: var(--k-radius); background: var(--k-bg2); }
+.skin .c-title { font-size: .86em; font-weight: 600; text-transform: var(--k-caps); letter-spacing: .04em; color: var(--k-accent); padding: 6px 8px 0; }
+.skin .c-tabbar { display: flex; background: var(--k-tabbar); border-bottom: 1px solid var(--k-line); }
+.skin .c-tab { flex: 1; text-align: center; padding: 9px 4px; color: var(--k-fg2); font-size: .93em; text-transform: var(--k-caps); cursor: pointer; border-bottom: 3px solid transparent; }
+.skin .c-tab.on { color: var(--k-fg); border-bottom-color: var(--k-accent); }
+.skin .c-list-row + .c-list-row, .skin .layout + .c-list-row { border-top: 1px solid var(--k-line); }
+.skin .c-collapse-head { display: flex; justify-content: space-between; padding: 8px; background: var(--k-head); font-weight: 600; }
+
+/* frame pieces (pane title bar, dialog) */
+.skin .p-title, .skin .d-title { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--k-titlebar); border-bottom: 1px solid var(--k-title-line); font-weight: 600; font-size: 1.07em; }
+.skin .d-buttons { display: flex; justify-content: flex-end; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--k-line); }

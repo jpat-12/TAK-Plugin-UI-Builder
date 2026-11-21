@@ -1,0 +1,482 @@
+{
+  "$comment": "GENERATED from src/spec/schema.ts by `npm run schema` — do not edit by hand.",
+  "title": "TAK Plugin UI Builder project (takui/v1)",
+  "description": "Platform-neutral plugin UI spec. Shape only — the builder additionally checks: unique ids, bind/on/visibleWhen references, bind type compatibility and allowed events per component (src/spec/catalog.ts), and per-target support warnings.",
+  "$ref": "#/definitions/TakUiProject",
+  "definitions": {
+    "TakUiProject": {
+      "type": "object",
+      "properties": {
+        "spec": {
+          "type": "string",
+          "const": "takui/v1"
+        },
+        "meta": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "packageId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+            },
+            "version": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$"
+            },
+            "description": {
+              "type": "string"
+            },
+            "author": {
+              "type": "string"
+            },
+            "targets": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "atak",
+                  "wintak",
+                  "webtak",
+                  "cloudtak",
+                  "takx"
+                ]
+              },
+              "minItems": 1
+            },
+            "spellingAllow": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "name",
+            "packageId",
+            "version",
+            "description",
+            "targets"
+          ],
+          "additionalProperties": false
+        },
+        "state": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "enum",
+                  "datetime",
+                  "point",
+                  "contact",
+                  "list"
+                ]
+              },
+              "description": {
+                "type": "string"
+              },
+              "options": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "color": {
+                      "type": "string",
+                      "pattern": "^#[0-9a-fA-F]{6}$"
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "label"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "itemFields": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/TakUiProject/properties/state/items"
+                }
+              },
+              "default": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "null"
+                ]
+              },
+              "persisted": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "key",
+              "type"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "intent": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "cot-send",
+                  "http",
+                  "map-pick",
+                  "navigate",
+                  "state-set",
+                  "custom"
+                ]
+              },
+              "params": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "intent",
+              "kind"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "entry": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "icon": {
+              "type": "string"
+            },
+            "openScreen": {
+              "$ref": "#/definitions/TakUiProject/properties/actions/items/properties/id"
+            }
+          },
+          "required": [
+            "label",
+            "openScreen"
+          ],
+          "additionalProperties": false
+        },
+        "screens": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/definitions/TakUiProject/properties/actions/items/properties/id"
+              },
+              "title": {
+                "type": "string"
+              },
+              "surface": {
+                "type": "string",
+                "enum": [
+                  "pane",
+                  "dialog",
+                  "settings"
+                ]
+              },
+              "root": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "#/definitions/TakUiProject/properties/actions/items/properties/id"
+                  },
+                  "props": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "visibleWhen": {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "op": {
+                        "type": "string",
+                        "enum": [
+                          "eq",
+                          "neq",
+                          "truthy",
+                          "falsy"
+                        ]
+                      },
+                      "value": {
+                        "type": [
+                          "string",
+                          "number",
+                          "boolean"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "key",
+                      "op"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "targetOverrides": {
+                    "type": "object",
+                    "properties": {
+                      "atak": {
+                        "type": "object",
+                        "properties": {
+                          "hidden": {
+                            "type": "boolean"
+                          },
+                          "props": {
+                            "$ref": "#/definitions/TakUiProject/properties/screens/items/properties/root/properties/props"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "wintak": {
+                        "type": "object",
+                        "properties": {
+                          "hidden": {
+                            "type": "boolean"
+                          },
+                          "props": {
+                            "$ref": "#/definitions/TakUiProject/properties/screens/items/properties/root/properties/props"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "webtak": {
+                        "type": "object",
+                        "properties": {
+                          "hidden": {
+                            "type": "boolean"
+                          },
+                          "props": {
+                            "$ref": "#/definitions/TakUiProject/properties/screens/items/properties/root/properties/props"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "cloudtak": {
+                        "type": "object",
+                        "properties": {
+                          "hidden": {
+                            "type": "boolean"
+                          },
+                          "props": {
+                            "$ref": "#/definitions/TakUiProject/properties/screens/items/properties/root/properties/props"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "takx": {
+                        "type": "object",
+                        "properties": {
+                          "hidden": {
+                            "type": "boolean"
+                          },
+                          "props": {
+                            "$ref": "#/definitions/TakUiProject/properties/screens/items/properties/root/properties/props"
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "bind": {
+                    "type": "string"
+                  },
+                  "on": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "$ref": "#/definitions/TakUiProject/properties/actions/items/properties/id"
+                    }
+                  },
+                  "kind": {
+                    "type": "string",
+                    "const": "container"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "stack",
+                      "row",
+                      "tabs",
+                      "section",
+                      "collapsible",
+                      "scroll",
+                      "list"
+                    ]
+                  },
+                  "children": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/definitions/TakUiProject/properties/screens/items/properties/root"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "$ref": "#/definitions/TakUiProject/properties/actions/items/properties/id"
+                            },
+                            "props": {
+                              "$ref": "#/definitions/TakUiProject/properties/screens/items/properties/root/properties/props"
+                            },
+                            "visibleWhen": {
+                              "$ref": "#/definitions/TakUiProject/properties/screens/items/properties/root/properties/visibleWhen"
+                            },
+                            "targetOverrides": {
+                              "$ref": "#/definitions/TakUiProject/properties/screens/items/properties/root/properties/targetOverrides"
+                            },
+                            "bind": {
+                              "$ref": "#/definitions/TakUiProject/properties/screens/items/properties/root/properties/bind"
+                            },
+                            "on": {
+                              "$ref": "#/definitions/TakUiProject/properties/screens/items/properties/root/properties/on"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "element"
+                            },
+                            "type": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "props",
+                            "kind",
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "props",
+                  "kind",
+                  "type",
+                  "children"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "surface",
+              "root"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "handoff": {
+          "type": "object",
+          "properties": {
+            "notes": {
+              "type": "string"
+            },
+            "starters": {
+              "type": "object",
+              "properties": {
+                "atak": {
+                  "type": "string"
+                },
+                "wintak": {
+                  "type": "string"
+                },
+                "webtak": {
+                  "type": "string"
+                },
+                "cloudtak": {
+                  "type": "string"
+                },
+                "takx": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "spec",
+        "meta",
+        "state",
+        "actions",
+        "entry",
+        "screens"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

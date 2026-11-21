@@ -1,0 +1,76 @@
+{
+  "spec": "takui/v1",
+  "meta": {
+    "name": "Incident Report",
+    "packageId": "org.example.incidentreport",
+    "version": "0.0.1",
+    "description": "A field form to report an incident: type, priority, location, notes and a photo, sent to the team as a map marker.",
+    "targets": ["atak", "wintak", "cloudtak"]
+  },
+  "state": [
+    { "key": "incidentType", "label": "Incident type", "type": "string" },
+    {
+      "key": "priority",
+      "label": "Priority",
+      "type": "enum",
+      "options": [
+        { "value": "low", "label": "Low", "color": "#16A34A" },
+        { "value": "medium", "label": "Medium", "color": "#D97706" },
+        { "value": "high", "label": "High", "color": "#DC2626" }
+      ],
+      "default": "medium"
+    },
+    { "key": "location", "label": "Location", "type": "point" },
+    { "key": "peopleInvolved", "label": "People involved", "type": "number", "default": 0 },
+    { "key": "details", "label": "Details", "type": "string" },
+    { "key": "photo", "label": "Photo", "type": "string", "description": "Local file path of the attached photo." },
+    { "key": "notifyTeam", "label": "Notify the whole team", "type": "boolean", "default": true }
+  ],
+  "actions": [
+    { "id": "pick-location", "label": "Pick location", "intent": "Let the user tap the map and store the point in location.", "kind": "map-pick" },
+    { "id": "submit-report", "label": "Send report", "intent": "Check that type and location are filled in, then place a marker at the location with the report details and photo attached, send it to the team (or only to me if notifyTeam is off), clear the form and show a toast 'Report sent'.", "kind": "cot-send" },
+    { "id": "clear-form", "label": "Clear form", "intent": "Reset every field on the form to its starting value.", "kind": "custom" }
+  ],
+  "entry": { "label": "Report", "icon": "clipboard with exclamation mark", "openScreen": "report" },
+  "screens": [
+    {
+      "id": "report",
+      "title": "New Incident Report",
+      "surface": "pane",
+      "root": {
+        "id": "report-scroll",
+        "kind": "container",
+        "type": "scroll",
+        "props": {},
+        "children": [
+          {
+            "id": "report-form",
+            "kind": "container",
+            "type": "stack",
+            "props": { "gap": 12 },
+            "children": [
+              { "id": "type-input", "kind": "element", "type": "dropdown", "props": { "label": "What happened?", "options": ["Medical", "Fire", "Hazard", "Lost person", "Vehicle accident", "Other"] }, "bind": "incidentType" },
+              { "id": "priority-input", "kind": "element", "type": "radio-group", "props": { "label": "Priority", "horizontal": true }, "bind": "priority" },
+              { "id": "location-input", "kind": "element", "type": "map-point-picker", "props": { "label": "Where?" }, "bind": "location", "on": { "change": "pick-location" } },
+              { "id": "people-input", "kind": "element", "type": "number-input", "props": { "label": "People involved", "min": 0 }, "bind": "peopleInvolved" },
+              { "id": "details-input", "kind": "element", "type": "text-area", "props": { "label": "Details", "placeholder": "What do responders need to know?", "rows": 4 }, "bind": "details" },
+              { "id": "photo-input", "kind": "element", "type": "data-package-attach", "props": { "label": "Photo", "accept": ["image/*"] }, "bind": "photo" },
+              { "id": "notify-input", "kind": "element", "type": "toggle", "props": { "label": "Notify the whole team" }, "bind": "notifyTeam" },
+              { "id": "form-divider", "kind": "element", "type": "divider", "props": {} },
+              {
+                "id": "form-buttons",
+                "kind": "container",
+                "type": "row",
+                "props": { "gap": 8 },
+                "children": [
+                  { "id": "clear-btn", "kind": "element", "type": "button", "props": { "text": "Clear", "style": "secondary" }, "on": { "click": "clear-form" } },
+                  { "id": "submit-btn", "kind": "element", "type": "button", "props": { "text": "Send report", "fullWidth": true }, "on": { "click": "submit-report" } }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

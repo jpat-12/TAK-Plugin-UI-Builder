@@ -1,0 +1,111 @@
+{
+  "spec": "takui/v1",
+  "meta": {
+    "name": "Team Check-In",
+    "packageId": "org.example.teamcheckin",
+    "version": "0.0.1",
+    "description": "Accountability roll call: the team lead asks for a check-in, and each member answers with one tap.",
+    "targets": ["atak", "webtak"]
+  },
+  "state": [
+    { "key": "isLead", "label": "I am the team lead", "type": "boolean", "default": false, "persisted": true },
+    { "key": "lastRequest", "label": "Last check-in request", "type": "datetime" },
+    {
+      "key": "roster",
+      "label": "Roster",
+      "type": "list",
+      "itemFields": [
+        { "key": "member", "type": "contact" },
+        {
+          "key": "answer",
+          "type": "enum",
+          "options": [
+            { "value": "waiting", "label": "Waiting", "color": "#6B7280" },
+            { "value": "ok", "label": "OK", "color": "#16A34A" },
+            { "value": "help", "label": "Needs help", "color": "#DC2626" }
+          ]
+        },
+        { "key": "answeredAt", "type": "datetime" }
+      ]
+    }
+  ],
+  "actions": [
+    { "id": "request-checkin", "label": "Request check-in", "intent": "Send a check-in request to everyone on the roster, set every answer to Waiting and record the time in lastRequest. Members' devices should alert loudly.", "kind": "cot-send" },
+    { "id": "answer-ok", "label": "Answer OK", "intent": "Reply to the latest check-in request with OK and my position.", "kind": "cot-send" },
+    { "id": "answer-help", "label": "Answer need help", "intent": "Reply to the latest check-in request with Needs help and my position, and also post it in GeoChat so nobody misses it.", "kind": "cot-send" }
+  ],
+  "entry": { "label": "Check-In", "icon": "hand raised", "openScreen": "checkin" },
+  "screens": [
+    {
+      "id": "checkin",
+      "title": "Team Check-In",
+      "surface": "pane",
+      "root": {
+        "id": "checkin-root",
+        "kind": "container",
+        "type": "stack",
+        "props": { "gap": 12 },
+        "children": [
+          {
+            "id": "answer-section",
+            "kind": "container",
+            "type": "section",
+            "props": { "title": "Answer a check-in" },
+            "children": [
+              {
+                "id": "answer-row",
+                "kind": "container",
+                "type": "row",
+                "props": { "gap": 8 },
+                "children": [
+                  { "id": "ok-btn", "kind": "element", "type": "button", "props": { "text": "I'm OK", "fullWidth": true }, "on": { "click": "answer-ok" } },
+                  { "id": "help-btn", "kind": "element", "type": "button", "props": { "text": "I need help", "style": "danger", "fullWidth": true }, "on": { "click": "answer-help" } }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "lead-section",
+            "kind": "container",
+            "type": "section",
+            "props": { "title": "Roster" },
+            "visibleWhen": { "key": "isLead", "op": "truthy" },
+            "children": [
+              {
+                "id": "lead-row",
+                "kind": "container",
+                "type": "row",
+                "props": { "gap": 8 },
+                "children": [
+                  { "id": "request-btn", "kind": "element", "type": "button", "props": { "text": "Request check-in" }, "on": { "click": "request-checkin" } },
+                  { "id": "last-request", "kind": "element", "type": "label", "props": { "muted": true }, "bind": "lastRequest" }
+                ]
+              },
+              {
+                "id": "roster-list",
+                "kind": "container",
+                "type": "list",
+                "props": { "emptyText": "No team members yet" },
+                "bind": "roster",
+                "children": [
+                  {
+                    "id": "roster-row",
+                    "kind": "container",
+                    "type": "row",
+                    "props": { "gap": 8 },
+                    "children": [
+                      { "id": "roster-answer", "kind": "element", "type": "status-badge", "props": {}, "bind": "$item.answer" },
+                      { "id": "roster-member", "kind": "element", "type": "callsign", "props": {}, "bind": "$item.member" },
+                      { "id": "roster-time", "kind": "element", "type": "label", "props": { "muted": true }, "bind": "$item.answeredAt" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          { "id": "lead-toggle", "kind": "element", "type": "checkbox", "props": { "label": "I am the team lead" }, "bind": "isLead" }
+        ]
+      }
+    }
+  ]
+}

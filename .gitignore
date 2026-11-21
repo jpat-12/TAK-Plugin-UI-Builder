@@ -1,0 +1,27 @@
+# Dependencies — OneDrive will still sync this folder; it's ignored by git only (PLAN.md D8)
+node_modules/
+
+# Build output — the site is deployed from a fresh build, never committed (PLAN.md D6)
+dist/
+
+# Exported handoff packages are user output, not source
+*-handoff.zip
+
+# Phase 4: API keys are entered in the browser and never written to disk, but just in case
+.env
+.env.*
+
+# Editor / OS noise
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.log
+Thumbs.db
+.DS_Store
+
+# schema/takui-v1.schema.json is intentionally tracked — it's generated (npm run schema) but
+# committed so coding agents can read the contract without installing anything; a test
+# fails if it drifts from src/spec/schema.ts.
+
+# Emitter compile checks write here (inside the repo so generated code resolves vue from node_modules)
+.emit-tmp/

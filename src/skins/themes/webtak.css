@@ -1,0 +1,14 @@
+/* WebTAK: a floating panel injected over the WebTAK map (see WebTAK-Plugin-Channels). Plain
+   DOM, Bootstrap-like dark styling. Approximate. */
+.skin-webtak {
+  --k-font: 14px/1.45 -apple-system, 'Segoe UI', Roboto, system-ui, sans-serif;
+  --k-bg: #212529; --k-bg2: #2b3035; --k-fg: #f8f9fa; --k-fg2: #adb5bd; --k-line: #495057; --k-placeholder: #6c757d;
+  --k-accent: #3fb1e3; --k-radius: 6px; --k-caps: none;
+  --k-btn: #343a40; --k-btn-border: #495057; --k-primary: #0d6efd; --k-primary-border: #0d6efd; --k-primary-fg: #fff;
+  --k-danger: #dc3545; --k-track: #495057; --k-th: #adb5bd;
+  --k-tabbar: #1a1d20; --k-head: #2b3035; --k-titlebar: #1a1d20; --k-title-line: #495057;
+}
+.skin-webtak .k-edit, .skin-webtak .k-spinner { border: 1px solid var(--k-line); border-radius: var(--k-radius); background: #1a1d20; padding: 4px 10px; }
+.skin-webtak .k-edit.area { border-bottom-width: 1px; }
+.skin-webtak .c-title { color: var(--k-fg); letter-spacing: 0; }
+.skin-webtak .c-tab { flex: 0 0 auto; padding: 8px 14px; border-bottom-width: 2px; }

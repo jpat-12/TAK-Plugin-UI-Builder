@@ -1,0 +1,16 @@
+/* CloudTAK: Vue 3 + Tabler (dark). Boxed inputs, card sections, sentence-case labels.
+   Approximate — CloudTAK's actual panel chrome varies by version. */
+.skin-cloudtak {
+  --k-font: 14px/1.45 Inter, -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --k-bg: #151f2c; --k-bg2: #1d273b; --k-fg: #f8fafc; --k-fg2: #9ba9be; --k-line: #2b3a55; --k-placeholder: #5f6f87;
+  --k-accent: #4299e1; --k-radius: 4px; --k-caps: none;
+  --k-btn: #1d273b; --k-btn-border: #34445f; --k-primary: #206bc4; --k-primary-border: #206bc4; --k-primary-fg: #fff;
+  --k-danger: #d63939; --k-track: #2b3a55; --k-th: #9ba9be;
+  --k-tabbar: #151f2c; --k-head: #1d273b; --k-titlebar: #1d273b; --k-title-line: #2b3a55;
+}
+.skin-cloudtak .k-edit, .skin-cloudtak .k-spinner { border: 1px solid var(--k-line); border-radius: var(--k-radius); background: #121a26; padding: 4px 10px; }
+.skin-cloudtak .k-edit.area { border-bottom-width: 1px; }
+.skin-cloudtak .k-btn { font-weight: 500; }
+.skin-cloudtak .c-title { color: var(--k-fg); font-size: .93em; letter-spacing: 0; padding: 10px 12px 2px; }
+.skin-cloudtak .c-tab { flex: 0 0 auto; padding: 9px 14px; border-bottom-width: 2px; }
+.skin-cloudtak .k-h.l3 { color: var(--k-fg2); }

@@ -1,0 +1,18 @@
+/* TAKX: Swing desktop app (dark theme), modeled on the TAKX 5.8.0 SDK curriculum screenshots:
+   charcoal panels, a gold-outlined tab header on docked panels, boxed inputs, black globe view.
+   Approximate: the real look comes from TAKX's Swing look-and-feel. */
+.skin-takx {
+  --k-font: 13px/1.4 'Segoe UI', system-ui, sans-serif;
+  --k-bg: #2b2b2b; --k-bg2: #323232; --k-fg: #f0f0f0; --k-fg2: #a9a9a9; --k-line: #4a4a4a; --k-placeholder: #7a7a7a;
+  --k-accent: #c9a24a; --k-radius: 3px; --k-caps: none;
+  --k-btn: #3a3a3a; --k-btn-border: #555; --k-primary: #4a4a4a; --k-primary-border: #c9a24a; --k-primary-fg: #fff;
+  --k-danger: #b52a2a; --k-track: #555; --k-th: #f0f0f0;
+  --k-tabbar: #262626; --k-head: #363636; --k-titlebar: #3a3424; --k-title-line: #c9a24a;
+}
+.skin-takx .k-edit, .skin-takx .k-spinner { border: 1px solid #5a5a5a; background: #222; padding: 3px 8px; min-height: 28px; }
+.skin-takx .k-edit.area { border-bottom-width: 1px; }
+.skin-takx .c-section { border-color: #4a4a4a; }
+.skin-takx .c-title { color: var(--k-fg); text-transform: none; letter-spacing: 0; font-weight: 600; }
+.skin-takx .c-tab { flex: 0 0 auto; padding: 6px 14px; border-bottom-width: 2px; }
+/* docked-panel tab header: gold outline like the TAKX Devices panel */
+.skin-takx .p-title { margin: 6px 6px 0; border: 2px solid var(--k-accent); border-bottom: 0; border-radius: 4px 4px 0 0; font-size: 14px; padding: 6px 10px; }

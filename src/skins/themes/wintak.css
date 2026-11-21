@@ -1,0 +1,16 @@
+/* WinTAK: WPF dock pane on the dark desktop theme. Square-ish corners, boxed inputs, Segoe UI.
+   Approximate. */
+.skin-wintak {
+  --k-font: 13px/1.4 'Segoe UI', system-ui, sans-serif;
+  --k-bg: #2b2b2e; --k-bg2: #333337; --k-fg: #f1f1f1; --k-fg2: #a9a9b0; --k-line: #46464d; --k-placeholder: #77777f;
+  --k-accent: #3399ff; --k-radius: 2px; --k-caps: none;
+  --k-btn: #3e3e42; --k-btn-border: #55555c; --k-primary: #007acc; --k-primary-border: #1c97ea; --k-primary-fg: #fff;
+  --k-danger: #b52a2a; --k-track: #55555c; --k-th: #f1f1f1;
+  --k-tabbar: #252528; --k-head: #3a3a3f; --k-titlebar: #3f3f46; --k-title-line: #007acc;
+}
+.skin-wintak .k-edit, .skin-wintak .k-spinner { border: 1px solid #5a5a62; background: #1e1e20; padding: 3px 8px; min-height: 28px; }
+.skin-wintak .k-edit.area { border-bottom-width: 1px; }
+.skin-wintak .k-btn { padding: 5px 14px; }
+.skin-wintak .c-tab { flex: 0 0 auto; padding: 6px 14px; border-bottom-width: 2px; }
+.skin-wintak .c-title { color: var(--k-fg); font-weight: 600; letter-spacing: 0; }
+.skin-wintak .p-title { font-size: 13px; padding: 6px 10px; }

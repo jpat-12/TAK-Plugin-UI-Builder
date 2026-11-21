@@ -1,0 +1,90 @@
+{
+  "spec": "takui/v1",
+  "meta": {
+    "name": "Resource Request",
+    "packageId": "org.example.resourcerequest",
+    "version": "0.0.1",
+    "description": "Ask logistics for supplies or equipment and track what you've requested.",
+    "targets": ["atak", "wintak"]
+  },
+  "state": [
+    { "key": "item", "label": "Item", "type": "string" },
+    { "key": "quantity", "label": "Quantity", "type": "number", "default": 1 },
+    { "key": "neededBy", "label": "Needed by", "type": "datetime" },
+    { "key": "deliverTo", "label": "Deliver to", "type": "point" },
+    { "key": "approver", "label": "Send to", "type": "contact" },
+    { "key": "requestNotes", "label": "Notes", "type": "string" },
+    {
+      "key": "myRequests",
+      "label": "My requests",
+      "type": "list",
+      "itemFields": [
+        { "key": "item", "type": "string" },
+        { "key": "quantity", "type": "number" },
+        {
+          "key": "status",
+          "type": "enum",
+          "options": [
+            { "value": "sent", "label": "Sent", "color": "#6B7280" },
+            { "value": "approved", "label": "Approved", "color": "#2563EB" },
+            { "value": "delivered", "label": "Delivered", "color": "#16A34A" },
+            { "value": "denied", "label": "Denied", "color": "#DC2626" }
+          ]
+        }
+      ]
+    }
+  ],
+  "actions": [
+    { "id": "pick-delivery", "label": "Pick delivery point", "intent": "Let the user tap the map to choose where the items should be delivered.", "kind": "map-pick" },
+    { "id": "send-request", "label": "Send request", "intent": "Check that item, quantity and delivery point are filled in, send the request to the chosen contact, add it to myRequests as Sent and switch to the My requests tab.", "kind": "cot-send" },
+    { "id": "open-request", "label": "Open request", "intent": "Show the tapped request's full details and its delivery point on the map.", "kind": "custom" }
+  ],
+  "entry": { "label": "Request", "icon": "box", "openScreen": "requests" },
+  "screens": [
+    {
+      "id": "requests",
+      "title": "Resource Request",
+      "surface": "pane",
+      "root": {
+        "id": "requests-tabs",
+        "kind": "container",
+        "type": "tabs",
+        "props": {},
+        "children": [
+          {
+            "id": "new-tab",
+            "kind": "container",
+            "type": "section",
+            "props": { "title": "New request" },
+            "children": [
+              {
+                "id": "new-form",
+                "kind": "container",
+                "type": "stack",
+                "props": { "gap": 10 },
+                "children": [
+                  { "id": "item-input", "kind": "element", "type": "dropdown", "props": { "label": "Item", "options": ["Water", "Food", "Batteries", "Radios", "Medical kit", "Generator", "Other"] }, "bind": "item" },
+                  { "id": "qty-input", "kind": "element", "type": "number-input", "props": { "label": "Quantity", "min": 1 }, "bind": "quantity" },
+                  { "id": "needed-input", "kind": "element", "type": "datetime", "props": { "label": "Needed by" }, "bind": "neededBy" },
+                  { "id": "deliver-input", "kind": "element", "type": "map-point-picker", "props": { "label": "Deliver to" }, "bind": "deliverTo", "on": { "change": "pick-delivery" } },
+                  { "id": "approver-input", "kind": "element", "type": "contact-picker", "props": { "label": "Send to" }, "bind": "approver" },
+                  { "id": "notes-input", "kind": "element", "type": "text-area", "props": { "label": "Notes", "rows": 2 }, "bind": "requestNotes" },
+                  { "id": "send-btn", "kind": "element", "type": "button", "props": { "text": "Send request", "fullWidth": true }, "on": { "click": "send-request" } }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "mine-tab",
+            "kind": "container",
+            "type": "section",
+            "props": { "title": "My requests" },
+            "children": [
+              { "id": "mine-table", "kind": "element", "type": "table", "props": { "columns": ["item", "quantity", "status"], "emptyText": "No requests yet" }, "bind": "myRequests", "on": { "rowClick": "open-request" } }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
