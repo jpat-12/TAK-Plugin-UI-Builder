@@ -10,7 +10,7 @@ const store = useProject();
 
 const KIND_WORDS: Record<ActionKind, string> = {
   'cot-send': 'Send a CoT', http: 'Call a web API', 'map-pick': 'Pick a point on the map',
-  navigate: 'Open a screen', 'state-set': 'Change a data field', custom: 'Something else',
+  navigate: 'Open a screen', 'state-set': 'Change a data field', notify: 'Show a message', custom: 'Something else',
 };
 
 /** action id → [{ nodeId, event }] that trigger it */
@@ -69,6 +69,16 @@ function add() {
           </select>
         </div>
         <div class="row"><span class="l">URL</span><input :value="a.params?.url ?? ''" placeholder="https://… (or describe it below)" @input="setParam(a, 'url', ($event.target as HTMLInputElement).value)" /></div>
+      </template>
+      <template v-if="a.kind === 'notify'">
+        <div class="row"><span class="l">Message</span><input :value="a.params?.message ?? ''" placeholder="e.g. Status sent" @input="setParam(a, 'message', ($event.target as HTMLInputElement).value)" /></div>
+        <div class="row"><span class="l">How</span>
+          <select :value="a.params?.style ?? 'toast'" @change="setParam(a, 'style', ($event.target as HTMLSelectElement).value)">
+            <option value="toast">Brief pop-up (toast)</option>
+            <option value="notification">System notification (stays until read)</option>
+            <option value="alert">Alert box (must tap OK)</option>
+          </select>
+        </div>
       </template>
       <div v-if="a.kind === 'cot-send'" class="row"><span class="l">CoT type</span><input :value="a.params?.cotType ?? ''" placeholder="optional, e.g. b-m-p-s-p-i" @input="setParam(a, 'cotType', ($event.target as HTMLInputElement).value)" /></div>
       <textarea rows="3" :value="a.intent" placeholder="What should it do? e.g. Send my status to the team as a CoT, then show 'Sent'"

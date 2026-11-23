@@ -61,7 +61,21 @@ function stateJs(p: Project): string {
     '}', '',
     'export function labelOf(options, value) { const o = options.find((x) => x.value === value); return o ? o.label : (value == null ? \'\' : String(value)); }',
     'export function colorOf(options, value) { const o = options.find((x) => x.value === value); return (o && o.color) || \'#6B7280\'; }',
-    'export function fmtPoint(p) { return p ? p.lat.toFixed(5) + \', \' + p.lon.toFixed(5) : \'Not set\'; }', '');
+    'export function fmtPoint(p) { return p ? p.lat.toFixed(5) + \', \' + p.lon.toFixed(5) : \'Not set\'; }', '',
+    '/** Timer text: time since `iso` (elapsed) or until it (countdown) as [-]mm:ss or h:mm:ss; "--:--" when unset */',
+    'export function fmtClock(iso, countdown) {',
+    `${T}const t = Date.parse(iso);`,
+    `${T}if (Number.isNaN(t)) return '--:--';`,
+    `${T}const ms = countdown ? t - Date.now() : Date.now() - t;`,
+    `${T}const s = Math.floor(Math.abs(ms) / 1000);`,
+    `${T}const two = (n) => String(n).padStart(2, '0');`,
+    `${T}return (ms < 0 ? '-' : '') + (s >= 3600 ? Math.floor(s / 3600) + ':' + two(Math.floor(s / 60) % 60) + ':' + two(s % 60) : two(Math.floor(s / 60)) + ':' + two(s % 60));`, '}', '',
+    '/** Past the warning point: elapsed >= warnMs, or countdown remaining <= warnMs (warnMs < 0 = only once overdue) */',
+    'export function clockOver(iso, countdown, warnMs) {',
+    `${T}const t = Date.parse(iso);`,
+    `${T}if (Number.isNaN(t)) return false;`,
+    `${T}const ms = countdown ? t - Date.now() : Date.now() - t;`,
+    `${T}return countdown ? (warnMs < 0 ? ms < 0 : ms <= warnMs) : warnMs >= 0 && ms >= warnMs;`, '}', '');
   return out.join('\n');
 }
 
@@ -111,6 +125,11 @@ function stylesJs(prefix: string): string {
     `${c}-tabs { display: flex; gap: 4px; border-bottom: 1px solid #495057; margin-bottom: 6px; } ${c}-tabs button.on { border-bottom: 2px solid #3fb1e3; }`,
     `${c}-list-row { padding: 6px 0; border-bottom: 1px solid #495057; } ${c}-empty { font-style: italic; color: #adb5bd; padding: 8px 0; }`,
     `${c}-table { width: 100%; border-collapse: collapse; } ${c}-table th, ${c}-table td { text-align: left; padding: 4px; border-bottom: 1px solid #495057; }`,
+    `${c}-alert { padding: 8px 10px; border-radius: 6px; border-left: 4px solid; white-space: pre-line; } ${c}-alert.info { background: #0d2a45; border-color: #1e88e5; }`,
+    `${c}-alert.success { background: #10301a; border-color: #43a047; } ${c}-alert.warning { background: #3d3007; border-color: #f9a825; } ${c}-alert.danger { background: #3d1010; border-color: #e53935; }`,
+    `${c}-stat { display: flex; flex-direction: column; align-items: center; padding: 8px; border: 1px solid #495057; border-radius: 6px; } ${c}-stat b { font-size: 24px; } ${c}-stat span { font-size: 12px; color: #adb5bd; }`,
+    `${c}-timer { font: 600 22px/1.2 ui-monospace, Consolas, monospace; } ${c}-timer.warn { color: #e53935; }`,
+    `${c}-spin { display: inline-block; width: 14px; height: 14px; border: 2px solid #495057; border-top-color: #3fb1e3; border-radius: 50%; animation: ${prefix}-spin .9s linear infinite; } @keyframes ${prefix}-spin { to { transform: rotate(360deg); } }`,
     '`;', `${T}doc.head.appendChild(s);`, '}', ''].join('\n');
 }
 
@@ -129,6 +148,8 @@ interface JCtx {
   /** row builder functions */
   fns: string[];
   tabs: string[];
+  /** a timer is on this panel: render() runs once a second */
+  clock: boolean;
 }
 
 const use = (ctx: JCtx, name: string) => (ctx.imports.add(name), name);
@@ -203,6 +224,14 @@ function genContainer(ctx: JCtx, c: ContainerNode): string {
       genKids(ctx, c, e, 'v');
       break;
     case 'scroll': ctx.body.push(`const ${e} = h('div', { class: '${k}-stack', 'data-id': ${strLit(c.id)}, style: 'max-height: 60vh; overflow: auto' });`); genKids(ctx, c, e, 'v'); break;
+    case 'grid': {
+      const cols = Math.max(1, Math.min(6, Math.round(Number(c.props.columns ?? 2)) || 2));
+      const gap = typeof c.props.gap === 'number' ? c.props.gap : 8;
+      ctx.body.push(`const ${e} = h('div', { 'data-id': ${strLit(c.id)}, style: 'display: grid; grid-template-columns: repeat(${cols}, minmax(0, 1fr)); gap: ${gap}px' });`);
+      // CSS gap spaces the cells, so children get no margins
+      c.children.forEach((ch) => gen(ctx, ch, e, 0, true, 'v'));
+      break;
+    }
     case 'tabs': {
       ctx.tabs.push(c.id);
       ctx.body.push(`const ${e} = h('div', { 'data-id': ${strLit(c.id)} });`, `const ${e}_bar = h('div', { class: '${k}-tabs' });`, `${e}.append(${e}_bar);`);
@@ -335,6 +364,29 @@ function genElement(ctx: JCtx, n: ElementNode): string {
       if (r?.opts) live(ctx, `${e}.textContent = ${display(ctx, r)};`), live(ctx, `${e}.style.background = ${use(ctx, 'colorOf')}(${r.opts}, ${r.expr});`);
       return e;
     case 'empty-state': B(`const ${e} = h('div', { class: '${k}-empty', 'data-id': ${strLit(n.id)} }, ${strLit(String(p.text ?? ''))});`); return e;
+    case 'alert':
+      B(`const ${e} = h('div', { class: '${k}-alert ${String(p.tone ?? 'info').replace(/[^a-z]/g, '')}', role: 'alert', 'data-id': ${strLit(n.id)} }${r ? '' : `, ${strLit(String(p.text ?? ''))}`});`);
+      if (r) live(ctx, `${e}.textContent = ${display(ctx, r)};`);
+      return e;
+    case 'stat': {
+      const unit = typeof p.unit === 'string' && p.unit ? ` + ${strLit(` ${p.unit}`)}` : '';
+      B(`const ${e}_value = h('b', null, '—');`, `const ${e} = h('div', { class: '${k}-stat', 'data-id': ${strLit(n.id)} }, ${e}_value, h('span', null, ${strLit(String(p.caption ?? ''))}));`);
+      if (r) live(ctx, `${e}_value.textContent = ${display(ctx, r)}${unit};`);
+      return e;
+    }
+    case 'timer':
+      B(`const ${e} = h('div', { class: '${k}-timer'${label ? '' : `, 'data-id': ${strLit(n.id)}`} }, '--:--');`);
+      if (r?.field.type === 'datetime') {
+        const cd = p.mode === 'countdown';
+        const warn = typeof p.warnMinutes === 'number' ? Math.round(p.warnMinutes * 60000) : -1;
+        ctx.clock = true;
+        live(ctx, `${e}.textContent = ${use(ctx, 'fmtClock')}(${r.expr}, ${cd});`);
+        live(ctx, `${e}.classList.toggle('warn', ${use(ctx, 'clockOver')}(${r.expr}, ${cd}, ${warn}));`);
+      }
+      return wrap(e);
+    case 'loading':
+      B(`const ${e} = h('div', { class: '${k}-row ${k}-muted', style: 'gap: 8px', 'data-id': ${strLit(n.id)} }, h('span', { class: '${k}-spin', role: 'status' }), ${strLit(String(p.text ?? 'Loading…'))});`);
+      return e;
     case 'callsign':
       B(`const ${e} = h('strong', { 'data-id': ${strLit(n.id)} }${r ? '' : ", 'Callsign'"});${r ? '' : " // TODO: this user's callsign"}`);
       if (r) live(ctx, `${e}.textContent = ${display(ctx, r)};`);
@@ -373,7 +425,7 @@ function genElement(ctx: JCtx, n: ElementNode): string {
 }
 
 function panelJs(p: Project, s: Screen, cls: string): string {
-  const ctx: JCtx = { p, cls, imports: new Set(), scopes: [], body: [], render: [], fns: [], tabs: [] };
+  const ctx: JCtx = { p, cls, imports: new Set(), scopes: [], body: [], render: [], fns: [], tabs: [], clock: false };
   ctx.body.push(`const root = h('div', { class: '${cls}-panel', 'data-screen': ${strLit(s.id)} }, h('strong', null, ${strLit(s.title)}));`);
   gen(ctx, s.root, 'root', 0, true, 'v');
   const fnName = `mount${pascal(s.id)}`;
@@ -383,7 +435,8 @@ function panelJs(p: Project, s: Screen, cls: string): string {
     `import { h${ctx.imports.has('setValue') ? ', setValue' : ''} } from './dom.js';`,
     ...(stateImports.length ? [`import { ${stateImports.join(', ')} } from './state.js';`] : []), '',
     '/**',
-    ` * Build the "${commentSafe(s.title)}" panel into \`host\`. Returns { root, render }: call render() after changing state.`,
+    ` * Build the "${commentSafe(s.title)}" panel into \`host\`. Returns { root, render${ctx.clock ? ', dispose' : ''} }: call render() after changing state.`,
+    ...(ctx.clock ? [' * Timers re-render once a second while the panel is on the page; call dispose() when the panel is destroyed.'] : []),
     ' * @param {HTMLElement} host  @param {object} state  createState()  @param {object} actions  createActions(state)',
     ' */',
     `export function ${fnName}(host, state, actions) {`,
@@ -393,7 +446,10 @@ function panelJs(p: Project, s: Screen, cls: string): string {
     `${T}host.append(root);`, '',
     `${T}function render() {`, ...ctx.render.map((l) => `${T}${T}${l}`), `${T}}`, '',
     `${T}render();`,
-    `${T}return { root, render };`, '}', '',
+    ...(ctx.clock
+      ? [`${T}const clock = setInterval(() => { if (root.isConnected) render(); }, 1000);`, `${T}return { root, render, dispose: () => clearInterval(clock) };`]
+      : [`${T}return { root, render };`]),
+    '}', '',
   ].join('\n');
 }
 

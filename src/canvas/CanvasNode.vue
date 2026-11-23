@@ -35,11 +35,15 @@ const c = computed(() => (props.node.kind === 'container' ? (props.node as Conta
 const horizontal = computed(() => c.value?.type === 'row');
 const gap = computed(() => (typeof eff.value.props.gap === 'number' ? eff.value.props.gap : 8));
 const alignMap: Record<string, string> = { start: 'flex-start', center: 'center', end: 'flex-end', stretch: 'stretch' };
-const layoutStyle = computed(() => ({
-  gap: gap.value + 'px',
-  alignItems: alignMap[String(eff.value.props.align ?? (horizontal.value ? 'center' : 'stretch'))],
-  flexWrap: eff.value.props.wrap ? ('wrap' as const) : undefined,
-}));
+const grid = computed(() => c.value?.type === 'grid');
+const columns = computed(() => Math.max(1, Math.min(6, Math.round(Number(eff.value.props.columns ?? 2)) || 2)));
+const layoutStyle = computed(() => (grid.value
+  ? { display: 'grid', gridTemplateColumns: `repeat(${columns.value}, minmax(0, 1fr))`, gap: gap.value + 'px', alignItems: 'stretch' }
+  : {
+      gap: gap.value + 'px',
+      alignItems: alignMap[String(eff.value.props.align ?? (horizontal.value ? 'center' : 'stretch'))],
+      flexWrap: eff.value.props.wrap ? ('wrap' as const) : undefined,
+    }));
 
 // list: children are the row template, rendered against the list's item fields
 const listField = computed(() => (c.value?.type === 'list' ? resolveField(props.ctx, c.value.bind) : undefined));
@@ -148,11 +152,13 @@ function onDrop(e: DragEvent) {
         <div v-show="!collapsedPreview" class="layout" :class="{ row: horizontal, pad: c.type !== 'stack' || !isRoot }" :style="layoutStyle">
           <template v-if="!ghost">
             <DropSlot v-if="!c.children.length" :parent-id="c.id" :index="0" :horizontal="horizontal" empty />
+            <!-- a grid skips the between-item slots (they'd take up cells); drops on a cell insert after it,
+                 drops on the grid's edge append -->
             <template v-for="(child, i) in c.children" :key="child.id">
-              <DropSlot :parent-id="c.id" :index="i" :horizontal="horizontal" />
+              <DropSlot v-if="!grid" :parent-id="c.id" :index="i" :horizontal="horizontal" />
               <CanvasNode :node="child" :ctx="childCtx" :class="{ 'c-list-row': c.type === 'list' }" />
             </template>
-            <DropSlot v-if="c.children.length" :parent-id="c.id" :index="c.children.length" :horizontal="horizontal" />
+            <DropSlot v-if="c.children.length && !grid" :parent-id="c.id" :index="c.children.length" :horizontal="horizontal" />
           </template>
           <CanvasNode v-for="child in c.children" v-else :key="child.id" :node="child" :ctx="childCtx" ghost :target="target" :mockup="mockup" :tab="tab" />
         </div>

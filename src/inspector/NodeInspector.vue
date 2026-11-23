@@ -20,7 +20,7 @@ const spec = computed(() => componentSpec(n.value.kind, n.value.type));
 const isRoot = computed(() => props.at.parent === null);
 const issues = computed(() => store.issuesByRef.get(n.value.id) ?? []);
 const typos = computed(() => store.spelling.filter((m) => m.spot.ref === n.value.id));
-const SWITCHABLE: ContainerType[] = ['stack', 'row', 'section', 'collapsible', 'scroll'];
+const SWITCHABLE: ContainerType[] = ['stack', 'row', 'grid', 'section', 'collapsible', 'scroll'];
 
 // ---- data binding ----
 const item = computed(() => listScope(store.project, props.at.ancestors));

@@ -7,6 +7,7 @@ import incidentReport from './incident-report.takui.json';
 import teamCheckin from './team-checkin.takui.json';
 import resourceRequest from './resource-request.takui.json';
 import serverConnect from './server-connect.takui.json';
+import mciTriage from './mci-triage.takui.json';
 import helloStatus from '../../test/fixtures/hello-status.takui.json';
 import eventCad from '../../test/fixtures/event-cad.takui.json';
 
@@ -25,6 +26,7 @@ export const TEMPLATES: Template[] = [
   { id: 'incident-report', name: 'Incident Report', blurb: 'Field form with type, priority, map location and photo.', icon: '📋', group: 'Start from', raw: incidentReport },
   { id: 'team-checkin', name: 'Team Check-In', blurb: 'Lead requests a roll call; members answer with one tap.', icon: '✋', group: 'Start from', raw: teamCheckin },
   { id: 'resource-request', name: 'Resource Request', blurb: 'Request supplies, track them in a table. Uses tabs.', icon: '📦', group: 'Start from', raw: resourceRequest },
+  { id: 'mci-triage', name: 'Mass Casualty Triage', blurb: 'Incident clock, triage counts, tourniquet timers. Uses grids.', icon: '🩹', group: 'Start from', raw: mciTriage },
   { id: 'server-connect', name: 'Server Connection', blurb: 'Status pane plus a settings screen for an outside service.', icon: '🔌', group: 'Start from', raw: serverConnect },
   { id: 'hello-status', name: 'Hello Status', blurb: 'The smallest useful plugin: one screen, one action.', icon: '👋', group: 'Examples', raw: helloStatus },
   { id: 'event-cad', name: 'Event CAD (demo)', blurb: 'A full dispatch board: tabs, lists, a dialog and settings.', icon: '🚑', group: 'Examples', raw: eventCad },

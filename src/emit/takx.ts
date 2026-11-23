@@ -12,9 +12,9 @@
 import { componentSpec } from '../spec/catalog';
 import { hiddenOn, withOverrides } from '../spec/overrides';
 import type { ContainerNode, ElementNode, Node, Project, Screen, StateField } from '../spec/types';
-import { actionParams, actionsJava, buildModel, pluginStateJava, type JavaModel, type JField } from './atak/java';
+import { actionParams, actionsJava, buildModel, CLOCK_HELPERS, pluginStateJava, type JavaModel, type JField } from './atak/java';
 import { camel, commentSafe, HEADER_NOTE, javaIdent, pascal, strLit, upperSnake, type FileMap } from './common';
-import { optionsOf } from './atak/layout';
+import { ALERT_COLORS, gridColumns, optionsOf } from './atak/layout';
 
 const J = '    ';
 
@@ -29,6 +29,8 @@ interface SCtx {
   /** row builder methods */
   methods: string[];
   used: Set<string>;
+  /** a timer is on this screen: the panel needs a 1-second clock */
+  clock: boolean;
 }
 
 // ------------------------------------------------------------------ expressions
@@ -111,6 +113,13 @@ function container(ctx: SCtx, c: ContainerNode): string {
       else B(`final JPanel ${v} = box(BoxLayout.X_AXIS);`);
       kids(ctx, c, v, false);
       break;
+    case 'grid': {
+      const gap = typeof c.props.gap === 'number' ? c.props.gap : 8;
+      B(`final JPanel ${v} = new JPanel(new GridLayout(0, ${gridColumns(c)}, ${gap}, ${gap}));`, `${v}.setOpaque(false);`);
+      // GridLayout spaces cells itself: add every child with no strut (a strut would take a cell)
+      c.children.forEach((ch) => gen(ctx, ch, v, true, 0, true));
+      break;
+    }
     case 'section':
       B(`final JPanel ${v} = box(BoxLayout.Y_AXIS);`,
         c.props.title ? `${v}.setBorder(BorderFactory.createTitledBorder(${strLit(String(c.props.title))}));` : `${v}.setBorder(BorderFactory.createEtchedBorder());`);
@@ -325,6 +334,35 @@ function element(ctx: SCtx, n: ElementNode, vertical: boolean): string {
       } else B(`${v}.setText("Status");`);
       return v;
     case 'empty-state': B(`final JLabel ${v} = muted(${strLit(String(p.text ?? ''))});`); return v;
+    case 'alert': {
+      const c = ALERT_COLORS[String(p.tone ?? 'info')] ?? ALERT_COLORS.info!;
+      B(`final JLabel ${v} = wide(new JLabel(${strLit(r ? '' : String(p.text ?? ''))}));`, `${v}.setOpaque(true);`,
+        `${v}.setBackground(new Color(0x${c.bg.slice(1)}));`, `${v}.setForeground(new Color(0x${c.fg.slice(1)}));`, `${v}.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));`);
+      if (r) live(ctx, `${v}.setText(${display(r)});`);
+      return v;
+    }
+    case 'stat': {
+      B(`final JPanel ${v} = box(BoxLayout.Y_AXIS);`, `${v}.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEtchedBorder(), BorderFactory.createEmptyBorder(6, 8, 6, 8)));`,
+        `final JLabel ${v}Value = new JLabel("—");`, `${v}Value.setFont(${v}Value.getFont().deriveFont(Font.BOLD, 24f));`, `${v}Value.setAlignmentX(Component.CENTER_ALIGNMENT);`,
+        `final JLabel ${v}Caption = new JLabel(${strLit(String(p.caption ?? ''))});`, `${v}Caption.setForeground(Color.GRAY);`, `${v}Caption.setAlignmentX(Component.CENTER_ALIGNMENT);`,
+        `${v}.add(${v}Value);`, `${v}.add(${v}Caption);`);
+      if (r) live(ctx, `${v}Value.setText(${display(r)}${typeof p.unit === 'string' && p.unit ? ` + ${strLit(` ${p.unit}`)}` : ''});`);
+      return v;
+    }
+    case 'timer': {
+      B(`final JLabel ${v} = new JLabel("--:--");`, `${v}.setFont(new Font(Font.MONOSPACED, Font.BOLD, 22));`, `final Color ${v}Normal = ${v}.getForeground();`);
+      if (r?.jf.f.type === 'datetime') {
+        const cd = p.mode === 'countdown';
+        const warn = typeof p.warnMinutes === 'number' ? `${Math.round(p.warnMinutes * 60000)}L` : '-1L';
+        ctx.clock = true;
+        live(ctx, `${v}.setText(clock(${r.expr}, ${cd})); ${v}.setForeground(overdue(${r.expr}, ${cd}, ${warn}) ? WARN : ${v}Normal);`);
+      }
+      return wrap(v);
+    }
+    case 'loading':
+      B(`final JProgressBar ${v}Bar = tight(new JProgressBar());`, `${v}Bar.setIndeterminate(true);`, `final JPanel ${v} = box(BoxLayout.X_AXIS);`,
+        `addTo(${v}, ${v}Bar, false, 0);`, `addTo(${v}, muted(${strLit(String(p.text ?? 'Loading…'))}), false, 8);`);
+      return v;
     case 'callsign':
       B(`final JLabel ${v} = new JLabel(${r ? '""' : '"Callsign"'});`, `${v}.setFont(${v}.getFont().deriveFont(Font.BOLD));`);
       if (r) live(ctx, `${v}.setText(${display(r)});`);
@@ -389,12 +427,12 @@ const IMPORTS = [
   'javax.swing.JTabbedPane', 'javax.swing.JTable', 'javax.swing.JTextArea', 'javax.swing.JTextField', 'javax.swing.JToggleButton', 'javax.swing.SpinnerDateModel',
   'javax.swing.SpinnerNumberModel', 'javax.swing.SwingConstants', 'javax.swing.event.DocumentEvent', 'javax.swing.event.DocumentListener',
   'javax.swing.table.DefaultTableModel', 'javax.swing.text.JTextComponent', 'java.awt.BorderLayout', 'java.awt.Color', 'java.awt.Component', 'java.awt.Cursor',
-  'java.awt.Dimension', 'java.awt.FlowLayout', 'java.awt.Font', 'java.awt.event.MouseAdapter', 'java.awt.event.MouseEvent', 'java.text.DateFormat',
+  'java.awt.Dimension', 'java.awt.FlowLayout', 'java.awt.Font', 'java.awt.GridLayout', 'java.awt.event.MouseAdapter', 'java.awt.event.MouseEvent', 'java.text.DateFormat',
   'java.util.ArrayList', 'java.util.Date', 'java.util.List', 'java.util.Locale',
 ];
 
 function panelJava(p: Project, m: JavaModel, s: Screen, cls: string): string {
-  const ctx: SCtx = { p, m, params: actionParams(p, m), scopes: [], body: [], methods: [], used: new Set() };
+  const ctx: SCtx = { p, m, params: actionParams(p, m), scopes: [], body: [], methods: [], used: new Set(), clock: false };
   gen(ctx, { ...s.root, visibleWhen: undefined } as Node, 'content', true, 0, true);
   const out: string[] = [
     `package ${m.pkg};`, '', '@@IMPORTS@@',
@@ -423,6 +461,8 @@ function panelJava(p: Project, m: JavaModel, s: Screen, cls: string): string {
     `${J}${J}north.add(content, BorderLayout.NORTH);`,
     `${J}${J}add(new JScrollPane(north), BorderLayout.CENTER);`,
     `${J}${J}render();`,
+    // javax.swing.Timer fires on the EDT, so render() stays on the Swing thread
+    ...(ctx.clock ? [`${J}${J}// timers: re-render once a second (runs on the EDT). Stop it if the panel is ever disposed.`, `${J}${J}new javax.swing.Timer(1000, e -> render()).start();`] : []),
     `${J}}`, '',
     `${J}/** Push state into the panel. Call on the EDT. */`,
     `${J}public void render() {`,
@@ -464,6 +504,7 @@ function panelJava(p: Project, m: JavaModel, s: Screen, cls: string): string {
     `${J}private static String fmt(double d) { return d == Math.rint(d) ? String.valueOf((long) d) : String.valueOf(d); }`,
     `${J}private static String point(double[] p) { return p == null ? "" : String.format(Locale.US, "%.5f, %.5f", p[0], p[1]); }`,
     `${J}private static String time(long t) { return t == 0L ? "" : DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(t)); }`,
+    ...(ctx.clock ? [`${J}private static final Color WARN = new Color(0xE53935);`, ...CLOCK_HELPERS.map((l) => (l ? J + l : l))] : []),
     '}', '',
   ];
   const code = out.join('\n');

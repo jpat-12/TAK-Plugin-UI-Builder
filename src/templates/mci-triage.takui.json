@@ -1,0 +1,147 @@
+{
+  "spec": "takui/v1",
+  "meta": {
+    "name": "Mass Casualty Triage",
+    "packageId": "org.example.mcitriage",
+    "version": "0.0.1",
+    "description": "Triage board for a mass-casualty incident: an incident clock, counts by triage category, one-tap patient entry and a tourniquet timer on every patient.",
+    "targets": ["atak", "cloudtak", "wintak", "webtak", "takx"]
+  },
+  "state": [
+    { "key": "incidentStart", "label": "Incident start", "type": "datetime" },
+    { "key": "immediate", "label": "Immediate", "type": "number", "default": 0 },
+    { "key": "delayed", "label": "Delayed", "type": "number", "default": 0 },
+    { "key": "minor", "label": "Minor", "type": "number", "default": 0 },
+    { "key": "expectant", "label": "Expectant", "type": "number", "default": 0 },
+    { "key": "syncing", "label": "Syncing", "type": "boolean", "default": false },
+    { "key": "syncProblem", "label": "Sync problem", "type": "string", "default": "" },
+    {
+      "key": "patients",
+      "label": "Patients",
+      "type": "list",
+      "itemFields": [
+        { "key": "tag", "type": "string" },
+        {
+          "key": "triage",
+          "type": "enum",
+          "options": [
+            { "value": "immediate", "label": "Immediate", "color": "#DC2626" },
+            { "value": "delayed", "label": "Delayed", "color": "#CA8A04" },
+            { "value": "minor", "label": "Minor", "color": "#16A34A" },
+            { "value": "expectant", "label": "Expectant", "color": "#111827" }
+          ]
+        },
+        { "key": "tourniquetOn", "type": "datetime" }
+      ]
+    }
+  ],
+  "actions": [
+    { "id": "start-clock", "label": "Start incident clock", "intent": "Set incidentStart to now. If it is already set, ask before restarting it.", "kind": "custom" },
+    { "id": "add-immediate", "label": "Add Immediate patient", "intent": "Add a patient with the next tag number and triage Immediate, then add one to the immediate count.", "kind": "custom" },
+    { "id": "add-delayed", "label": "Add Delayed patient", "intent": "Add a patient with the next tag number and triage Delayed, then add one to the delayed count.", "kind": "custom" },
+    { "id": "add-minor", "label": "Add Minor patient", "intent": "Add a patient with the next tag number and triage Minor, then add one to the minor count.", "kind": "custom" },
+    { "id": "add-expectant", "label": "Add Expectant patient", "intent": "Add a patient with the next tag number and triage Expectant, then add one to the expectant count.", "kind": "custom" },
+    { "id": "show-patient", "label": "Show patient", "intent": "Show the tapped patient's tag, triage category and how long the tourniquet has been on.", "kind": "notify", "params": { "message": "Patient details", "style": "alert" } },
+    { "id": "send-report", "label": "Send situation report", "intent": "Send the four counts and the incident clock to the team as a CoT so command sees the same numbers.", "kind": "cot-send" },
+    { "id": "sync-now", "label": "Sync now", "intent": "Set syncing while the board is shared with the rest of the triage team over the TAK server. Clear syncProblem when it works; on failure put a short reason in syncProblem.", "kind": "http" }
+  ],
+  "entry": { "label": "Triage", "icon": "medical cross", "openScreen": "triage" },
+  "screens": [
+    {
+      "id": "triage",
+      "title": "Mass Casualty Triage",
+      "surface": "pane",
+      "root": {
+        "id": "triage-root",
+        "kind": "container",
+        "type": "stack",
+        "props": { "gap": 10 },
+        "children": [
+          { "id": "sync-problem", "kind": "element", "type": "alert", "props": { "tone": "warning" }, "bind": "syncProblem", "visibleWhen": { "key": "syncProblem", "op": "truthy" } },
+          { "id": "sync-busy", "kind": "element", "type": "loading", "props": { "text": "Syncing with the team…" }, "visibleWhen": { "key": "syncing", "op": "truthy" } },
+          {
+            "id": "clock-row",
+            "kind": "container",
+            "type": "row",
+            "props": { "gap": 12 },
+            "children": [
+              { "id": "incident-clock", "kind": "element", "type": "timer", "props": { "label": "Since incident start", "mode": "elapsed", "warnMinutes": 60 }, "bind": "incidentStart" },
+              { "id": "start-btn", "kind": "element", "type": "button", "props": { "text": "Start clock", "style": "secondary" }, "on": { "click": "start-clock" } }
+            ]
+          },
+          {
+            "id": "counts",
+            "kind": "container",
+            "type": "grid",
+            "props": { "columns": 4, "gap": 6 },
+            "children": [
+              { "id": "count-immediate", "kind": "element", "type": "stat", "props": { "caption": "Immediate" }, "bind": "immediate" },
+              { "id": "count-delayed", "kind": "element", "type": "stat", "props": { "caption": "Delayed" }, "bind": "delayed" },
+              { "id": "count-minor", "kind": "element", "type": "stat", "props": { "caption": "Minor" }, "bind": "minor" },
+              { "id": "count-expectant", "kind": "element", "type": "stat", "props": { "caption": "Expectant" }, "bind": "expectant" }
+            ]
+          },
+          {
+            "id": "add-section",
+            "kind": "container",
+            "type": "section",
+            "props": { "title": "Add a patient" },
+            "children": [
+              {
+                "id": "add-grid",
+                "kind": "container",
+                "type": "grid",
+                "props": { "columns": 2, "gap": 8 },
+                "children": [
+                  { "id": "add-immediate-btn", "kind": "element", "type": "button", "props": { "text": "Immediate", "style": "danger", "fullWidth": true }, "on": { "click": "add-immediate" } },
+                  { "id": "add-delayed-btn", "kind": "element", "type": "button", "props": { "text": "Delayed", "style": "secondary", "fullWidth": true }, "on": { "click": "add-delayed" } },
+                  { "id": "add-minor-btn", "kind": "element", "type": "button", "props": { "text": "Minor", "style": "secondary", "fullWidth": true }, "on": { "click": "add-minor" } },
+                  { "id": "add-expectant-btn", "kind": "element", "type": "button", "props": { "text": "Expectant", "style": "subtle", "fullWidth": true }, "on": { "click": "add-expectant" } }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "patients-section",
+            "kind": "container",
+            "type": "section",
+            "props": { "title": "Patients" },
+            "children": [
+              {
+                "id": "patient-list",
+                "kind": "container",
+                "type": "list",
+                "props": { "emptyText": "No patients yet" },
+                "bind": "patients",
+                "on": { "itemClick": "show-patient" },
+                "children": [
+                  {
+                    "id": "patient-row",
+                    "kind": "container",
+                    "type": "row",
+                    "props": { "gap": 10 },
+                    "children": [
+                      { "id": "patient-triage", "kind": "element", "type": "status-badge", "props": {}, "bind": "$item.triage" },
+                      { "id": "patient-tag", "kind": "element", "type": "label", "props": {}, "bind": "$item.tag" },
+                      { "id": "patient-tourniquet", "kind": "element", "type": "timer", "props": { "label": "Tourniquet", "mode": "elapsed", "warnMinutes": 120 }, "bind": "$item.tourniquetOn" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "report-row",
+            "kind": "container",
+            "type": "row",
+            "props": { "gap": 8 },
+            "children": [
+              { "id": "report-btn", "kind": "element", "type": "button", "props": { "text": "Send report", "fullWidth": true }, "on": { "click": "send-report" } },
+              { "id": "sync-btn", "kind": "element", "type": "button", "props": { "text": "Sync now", "style": "secondary" }, "on": { "click": "sync-now" } }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

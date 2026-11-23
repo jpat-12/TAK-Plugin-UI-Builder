@@ -26,6 +26,8 @@ export const PLATFORM_GUIDES: Record<Target, PlatformGuide> = {
       { concept: 'persisted fields', how: 'SharedPreferences, keyed with the plugin package id as a prefix.' },
       { concept: 'cot-send actions', how: 'Build a CotEvent and dispatch it through ATAK\'s CoT dispatcher (internal or external as the intent requires).' },
       { concept: 'map-pick actions', how: 'A map click listener / point-picking tool that returns a GeoPoint, then closes itself.' },
+      { concept: 'notify actions', how: 'style=toast → Toast; notification → ATAK\'s NotificationUtil (stays in the tray); alert → AlertDialog with an OK button, built with the MapView context, not the plugin context.' },
+      { concept: 'timer / stat / alert', how: 'Plain TextViews: a timer re-renders once a second (the generated Views class does this); an alert is a tinted TextView.' },
     ],
     rules: [
       'Use the spec\'s node ids (camelCased) as Android view ids so the layout can be traced back to the design.',
@@ -42,6 +44,8 @@ export const PLATFORM_GUIDES: Record<Target, PlatformGuide> = {
       { concept: 'settings screen', how: 'A settings panel/route for the plugin.' },
       { concept: 'persisted fields', how: 'Plugin-namespaced storage. If the plugin has a server side, store there and keep localStorage as the offline fallback only.' },
       { concept: 'cot-send actions', how: 'CloudTAK\'s map/worker CoT APIs. Use the documented plugin APIs before any internal reach-ins.' },
+      { concept: 'notify actions', how: 'An inline alert in the panel (TablerInlineAlert), or the host\'s toast/notification API if the plugin API exposes one; style=alert → a TablerModal.' },
+      { concept: 'alert / loading / empty', how: 'Prefer the host\'s Tabler components where the plugin can import them: TablerInlineAlert, TablerLoading, TablerNone. The generated markup uses the equivalent Tabler CSS classes.' },
     ],
     rules: [
       'Register routes in install(), never in enable()/disable().',
@@ -60,6 +64,8 @@ export const PLATFORM_GUIDES: Record<Target, PlatformGuide> = {
       { concept: 'launch button', how: 'A ribbon button that shows the dock pane.' },
       { concept: 'layout blocks', how: 'stack → StackPanel, row → StackPanel Orientation=Horizontal (or Grid), scroll → ScrollViewer, tabs → TabControl, list → ItemsControl/ListView with a DataTemplate.' },
       { concept: 'data fields', how: 'A view model with INotifyPropertyChanged; bind controls to it in XAML.' },
+      { concept: 'notify actions', how: 'style=toast/notification → WinTAK\'s notification service from the SDK; alert → MessageBox.Show.' },
+      { concept: 'grid', how: 'UniformGrid with Columns set; timers tick from one DispatcherTimer in the view model.' },
     ],
     rules: [
       'Follow the SDK\'s plugin template for how the plugin is discovered and how the dock pane and ribbon are registered.',
@@ -74,6 +80,7 @@ export const PLATFORM_GUIDES: Record<Target, PlatformGuide> = {
       { concept: 'launch button', how: 'A WebTAK menu entry that toggles the panel.' },
       { concept: 'persisted fields', how: 'localStorage, namespaced with the plugin package id.' },
       { concept: 'http / server calls', how: 'WebTAK\'s page origin is an authenticated TAK Server session, so same-origin Marti API calls need no extra login.' },
+      { concept: 'notify actions', how: 'A small auto-hiding banner inside the panel (no WebTAK toast API is documented); style=alert → an in-panel confirm box, not window.alert.' },
     ],
     rules: [
       'No framework is assumed. Keep the bundle small and dependency-free unless the notes say otherwise.',
@@ -91,6 +98,8 @@ export const PLATFORM_GUIDES: Record<Target, PlatformGuide> = {
       { concept: 'layout blocks', how: 'stack/row → BoxLayout, section → titled border, tabs → JTabbedPane, scroll → JScrollPane, list → rows rebuilt from the data, table → JTable.' },
       { concept: 'threading', how: 'Touch Swing only on the Event Dispatch Thread: mark UI methods @InvokeOnEDT (as the SDK example does) or use SwingUtilities.invokeLater.' },
       { concept: 'globe', how: 'delegate.getGlobeManager().getLastFocusedGlobe().goTo(location) to show a location (see the SDK\'s RavenAppPanel).' },
+      { concept: 'notify actions', how: 'style=alert → JOptionPane.showMessageDialog on the EDT; toast/notification → a TAKX notification API if the Platform API exposes one, else a status line in the panel.' },
+      { concept: 'master / detail', how: 'A JSplitPane with the list on top and details below, as the TAK.gov physiology-dashboard plugin does, when a screen pairs a table with a detail section.' },
     ],
     rules: [
       'Only use the TAKX Platform API (gov.takx.api / gov.takx.platform). Client internals are not plugin API.',

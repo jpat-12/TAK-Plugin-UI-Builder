@@ -161,6 +161,7 @@
                   "map-pick",
                   "navigate",
                   "state-set",
+                  "notify",
                   "custom"
                 ]
               },
@@ -360,6 +361,7 @@
                     "enum": [
                       "stack",
                       "row",
+                      "grid",
                       "tabs",
                       "section",
                       "collapsible",

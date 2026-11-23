@@ -22,6 +22,21 @@ const cellValue = (col: string, row: number) => {
   return f ? (f.type === 'enum' ? enumSample(f, row)?.label : sampleValue(f, row)) : '—';
 };
 const checked = computed(() => (field.value?.type === 'boolean' ? field.value.default === true : false));
+// timer: a fixed sample reading (12:34 in, or 7:26 left; later rows read further along), red past
+// the warning point so the designer sees both states without a live clock in the editor
+const timerMinutes = computed(() => (p.value.mode === 'countdown' ? 7.4 - (props.ctx.row ?? 0) * 3 : 12.6 + (props.ctx.row ?? 0) * 9));
+const timerText = computed(() => {
+  if (!field.value) return '--:--';
+  const m = timerMinutes.value;
+  const s = Math.round(Math.abs(m) * 60);
+  return `${m < 0 ? '-' : ''}${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+});
+const timerWarn = computed(() => {
+  const w = typeof p.value.warnMinutes === 'number' ? p.value.warnMinutes : undefined;
+  if (!field.value) return false;
+  if (p.value.mode === 'countdown') return w === undefined ? timerMinutes.value < 0 : timerMinutes.value <= w;
+  return w !== undefined && timerMinutes.value >= w;
+});
 </script>
 
 <template>
@@ -79,6 +94,17 @@ const checked = computed(() => (field.value?.type === 'boolean' ? field.value.de
   <span v-else-if="node.type === 'status-badge'" class="k-badge" :class="str('size', 'small')" :style="{ background: badge?.color ?? '#555' }">{{ badge?.label ?? 'Status' }}</span>
 
   <div v-else-if="node.type === 'empty-state'" class="k-empty">{{ str('text') }}</div>
+
+  <div v-else-if="node.type === 'alert'" class="k-alert" :class="str('tone', 'info')">{{ node.bind ? value : str('text') || 'Alert text' }}</div>
+
+  <div v-else-if="node.type === 'stat'" class="k-stat"><b>{{ field ? value : '—' }}<em v-if="str('unit')">{{ str('unit') }}</em></b><span>{{ str('caption') }}</span></div>
+
+  <label v-else-if="node.type === 'timer'" class="k-field">
+    <span v-if="str('label')" class="k-lbl">{{ str('label') }}</span>
+    <span class="k-timer" :class="{ warn: timerWarn }">{{ timerText }}</span>
+  </label>
+
+  <div v-else-if="node.type === 'loading'" class="k-loading"><i />{{ str('text', 'Loading…') }}</div>
 
   <table v-else-if="node.type === 'table'" class="k-table">
     <thead><tr><th v-for="c in columns" :key="c">{{ c }}</th><th v-if="!columns.length">(pick columns)</th></tr></thead>

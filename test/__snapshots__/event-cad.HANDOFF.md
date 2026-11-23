@@ -39,6 +39,8 @@ ATAK-CIV plugin in Java or Kotlin, built against the ATAK plugin SDK from tak.go
 - **persisted fields:** SharedPreferences, keyed with the plugin package id as a prefix.
 - **cot-send actions:** Build a CotEvent and dispatch it through ATAK's CoT dispatcher (internal or external as the intent requires).
 - **map-pick actions:** A map click listener / point-picking tool that returns a GeoPoint, then closes itself.
+- **notify actions:** style=toast → Toast; notification → ATAK's NotificationUtil (stays in the tray); alert → AlertDialog with an OK button, built with the MapView context, not the plugin context.
+- **timer / stat / alert:** Plain TextViews: a timer re-renders once a second (the generated Views class does this); an alert is a tinted TextView.
 - Use the spec's node ids (camelCased) as Android view ids so the layout can be traced back to the design.
 - Do the network and file work off the UI thread. Report failures to the user with a Toast and log stack traces with Log.e.
 - Never commit local.properties, keystores or API keys.
@@ -58,6 +60,8 @@ CloudTAK web plugin: Vue 3 single-file components with a class-based plugin entr
 - **settings screen:** A settings panel/route for the plugin.
 - **persisted fields:** Plugin-namespaced storage. If the plugin has a server side, store there and keep localStorage as the offline fallback only.
 - **cot-send actions:** CloudTAK's map/worker CoT APIs. Use the documented plugin APIs before any internal reach-ins.
+- **notify actions:** An inline alert in the panel (TablerInlineAlert), or the host's toast/notification API if the plugin API exposes one; style=alert → a TablerModal.
+- **alert / loading / empty:** Prefer the host's Tabler components where the plugin can import them: TablerInlineAlert, TablerLoading, TablerNone. The generated markup uses the equivalent Tabler CSS classes.
 - Register routes in install(), never in enable()/disable().
 - Wrap every component/icon passed to CloudTAK in markRaw().
 - Namespace all keys and route names (plugin-<name>, home-menu-<name>).

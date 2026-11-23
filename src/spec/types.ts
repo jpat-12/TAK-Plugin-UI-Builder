@@ -85,6 +85,7 @@ export const ACTION_KINDS = [
   'map-pick',  // ask the user to tap a point on the map
   'navigate',  // open another screen (params.screen)
   'state-set', // change a state value (params.key, params.value)
+  'notify',    // tell the user something: toast / notification (params.message)
   'custom',    // anything else — intent says what
 ] as const;
 export type ActionKind = (typeof ACTION_KINDS)[number];
@@ -122,7 +123,7 @@ export interface Screen {
   root: ContainerNode;
 }
 
-export const CONTAINER_TYPES = ['stack', 'row', 'tabs', 'section', 'collapsible', 'scroll', 'list'] as const;
+export const CONTAINER_TYPES = ['stack', 'row', 'grid', 'tabs', 'section', 'collapsible', 'scroll', 'list'] as const;
 export type ContainerType = (typeof CONTAINER_TYPES)[number];
 
 /** Structured condition instead of an expression language — emitters must translate it per target */

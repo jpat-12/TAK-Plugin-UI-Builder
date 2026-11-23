@@ -217,7 +217,7 @@ function fieldDetails(f: StateField, path: string[], line: (s?: string) => void)
 }
 
 function kindWords(a: Action): string {
-  return ({ 'cot-send': 'send a CoT event', http: 'call a web API', 'map-pick': 'pick a point on the map', navigate: 'open a screen', 'state-set': 'change a data field', custom: 'custom behavior' } as const)[a.kind];
+  return ({ 'cot-send': 'send a CoT event', http: 'call a web API', 'map-pick': 'pick a point on the map', navigate: 'open a screen', 'state-set': 'change a data field', notify: 'show the user a message', custom: 'custom behavior' } as const)[a.kind];
 }
 
 function triggerMap(p: Project): Map<string, string[]> {

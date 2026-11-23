@@ -152,6 +152,15 @@ function children(ctx: Ctx, c: ContainerNode, indent: string, dir: 'v' | 'h'): s
 
 const containerId = (_ctx: Ctx, c: ContainerNode) => `@+id/${snake(c.id)}`;
 
+/** Grid column count, clamped to the catalog's 1–6 */
+export const gridColumns = (c: Node) => Math.max(1, Math.min(6, Math.round(Number(c.props.columns ?? 2)) || 2));
+
+/** alert tones: solid fills that read on ATAK's dark panes (warning keeps dark text for contrast) */
+export const ALERT_COLORS: Record<string, { bg: string; fg: string }> = {
+  info: { bg: '#1565C0', fg: '#FFFFFF' }, success: { bg: '#2E7D32', fg: '#FFFFFF' },
+  warning: { bg: '#F9A825', fg: '#000000' }, danger: { bg: '#C62828', fg: '#FFFFFF' },
+};
+
 function container(ctx: Ctx, c: ContainerNode, ind: string, pos: Pos): string[] {
   const i2 = ind + '    ';
   const out: string[] = [];
@@ -164,6 +173,23 @@ function container(ctx: Ctx, c: ContainerNode, ind: string, pos: Pos): string[] 
       out.push(open('LinearLayout', [['android:id', containerId(ctx, c)], ...place(pos, c, 'match'), ['android:orientation', h ? 'horizontal' : 'vertical'], ['android:gravity', gravity], ...pad], ind, false));
       if (h && c.props.wrap) out.push(`${i2}<!-- wrap: LinearLayout can't wrap; switch to a FlexboxLayout if the row overflows -->`);
       out.push(...children(ctx, c, i2, h ? 'h' : 'v'), `${ind}</LinearLayout>`);
+      return out;
+    }
+    case 'grid': {
+      // GridLayout's column weights need API 21 attrs and fight wrap_content; rows of weighted
+      // LinearLayouts give the same equal columns with the placement code every other block uses
+      const cols = gridColumns(c);
+      const gap = typeof c.props.gap === 'number' ? c.props.gap : 8;
+      out.push(open('LinearLayout', [['android:id', containerId(ctx, c)], ...place(pos, c, 'match'), ['android:orientation', 'vertical'], ...pad], ind, false));
+      for (let r = 0; r * cols < c.children.length; r++) {
+        const cells = c.children.slice(r * cols, r * cols + cols);
+        out.push(open('LinearLayout', [['android:layout_width', 'match_parent'], ['android:layout_height', 'wrap_content'], ['android:orientation', 'horizontal'], ['android:layout_marginTop', r && gap ? DP(gap) : undefined]], i2, false));
+        cells.forEach((ch, k) => out.push(...emit(ctx, ch, i2 + '    ', { dir: 'h', first: k === 0, gap, fill: true })));
+        // empty cells keep the last row's columns the same width as the rows above
+        for (let k = cells.length; k < cols; k++) out.push(open('View', [['android:layout_width', '0dp'], ['android:layout_height', '1dp'], ['android:layout_weight', '1'], ['android:layout_marginStart', gap ? DP(gap) : undefined]], i2 + '    ', true));
+        out.push(`${i2}</LinearLayout>`);
+      }
+      out.push(`${ind}</LinearLayout>`);
       return out;
     }
     case 'section': {
@@ -356,6 +382,31 @@ function element(ctx: Ctx, node: ElementNode, ind: string, pos: Pos): string[] {
       break;
     case 'empty-state':
       lines = single('TextView', 'main', [['android:text', textRes('text')], ['android:gravity', 'center'], ['android:padding', DP(16)], ['android:textStyle', 'italic'], ['android:textColor', `@color/${ctx.res.prefix}_muted`]]);
+      break;
+    case 'alert': {
+      const c = ALERT_COLORS[s('tone', 'info')] ?? ALERT_COLORS.info!;
+      lines = single('TextView', 'main', [['android:text', node.bind ? undefined : textRes('text')], ['android:background', c.bg], ['android:textColor', c.fg], ['android:padding', DP(10)]]);
+      break;
+    }
+    case 'stat':
+      lines = [
+        open('LinearLayout', [...place(pos, node, 'match'), ['android:orientation', 'vertical'], ['android:gravity', 'center_horizontal'], ['android:background', `@drawable/${ctx.res.prefix}_section_bg`], ['android:padding', DP(8)]], ind, false),
+        open('TextView', [['android:id', track(ctx, node, 'TextView', 'main')], ['android:layout_width', 'wrap_content'], ['android:layout_height', 'wrap_content'], ['android:text', node.bind ? undefined : '—'], ['android:textSize', '26sp'], ['android:textStyle', 'bold']], ind + '    ', true),
+        open('TextView', [['android:layout_width', 'wrap_content'], ['android:layout_height', 'wrap_content'], ['android:text', textRes('caption')], ['android:textSize', '12sp'], ['android:gravity', 'center'], ['android:textColor', `@color/${ctx.res.prefix}_muted`]], ind + '    ', true),
+        `${ind}</LinearLayout>`,
+      ];
+      break;
+    case 'timer':
+      // text + color are set by the Views class, which re-renders once a second while the pane is attached
+      lines = single('TextView', 'main', [['android:text', '--:--'], ['android:textSize', '24sp'], ['android:textStyle', 'bold'], ['android:fontFamily', 'monospace']], pos.dir === 'h' ? 'wrap' : 'match');
+      break;
+    case 'loading':
+      lines = [
+        open('LinearLayout', [...place(pos, node, 'match'), ['android:orientation', 'horizontal'], ['android:gravity', 'center_vertical']], ind, false),
+        open('ProgressBar', [['android:layout_width', DP(20)], ['android:layout_height', DP(20)], ['android:indeterminate', 'true']], ind + '    ', true),
+        open('TextView', [['android:layout_width', 'wrap_content'], ['android:layout_height', 'wrap_content'], ['android:layout_marginStart', DP(10)], ['android:text', textRes('text', 'Loading…')], ['android:textColor', `@color/${ctx.res.prefix}_muted`]], ind + '    ', true),
+        `${ind}</LinearLayout>`,
+      ];
       break;
     case 'callsign':
       lines = single('TextView', 'main', [['android:textStyle', 'bold']], 'wrap');

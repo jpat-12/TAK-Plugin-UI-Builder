@@ -12,6 +12,7 @@ import { hiddenOn, withOverrides } from '../spec/overrides';
 import { walk } from '../spec/tree';
 import type { ContainerNode, ElementNode, Node, Project, Screen, StateField } from '../spec/types';
 import { commentSafe, csIdent, HEADER_NOTE, pascal, strLit, xmlEsc, type FileMap } from './common';
+import { ALERT_COLORS } from './atak/layout';
 
 const I = '    ';
 export const nsOf = (p: Project) => p.meta.packageId.split('.').map((s) => pascal(s)).join('.');
@@ -19,6 +20,8 @@ const prop = (key: string) => csIdent(pascal(key));
 const itemClass = (key: string) => `${pascal(key)}Item`;
 const visProp = (id: string) => `IsVisible_${pascal(id)}`;
 const cmd = (actionId: string) => `${pascal(actionId)}Command`;
+const clockProp = (id: string) => `Clock_${pascal(id)}`;
+const clockOverProp = (id: string) => `ClockOver_${pascal(id)}`;
 
 // ------------------------------------------------------------------ view model
 
@@ -48,6 +51,8 @@ interface VmInfo {
   vis: Map<string, [string, string][]>;
   /** radio option bools wanted: top-level enum keys */
   radios: Set<string>;
+  /** timer display props per owner class: class name → [nodeId, datetime prop, countdown, warn minutes or -1] */
+  clocks: Map<string, [string, string, boolean, number][]>;
 }
 
 /** Owner class of a node: the VM, or the item class of the nearest list ancestor */
@@ -73,7 +78,7 @@ function condCs(f: StateField, expr: string, op: string, value: unknown): string
 }
 
 function collectVm(p: Project): VmInfo {
-  const info: VmInfo = { vis: new Map(), radios: new Set() };
+  const info: VmInfo = { vis: new Map(), radios: new Set(), clocks: new Map() };
   const all: { node: Node; ancestors: Node[] }[] = [];
   const go = (n: Node, anc: Node[]) => { all.push({ node: n, ancestors: anc }); if (n.kind === 'container') for (const c of n.children) go(c, [...anc, n]); };
   for (const s of p.screens) go(s.root, []);
@@ -88,6 +93,14 @@ function collectVm(p: Project): VmInfo {
       if (f) info.vis.set(cls, [...(info.vis.get(cls) ?? []), [visProp(node.id), condCs(f, prop(f.key), v.op, v.value)]]);
     }
     if (node.type === 'radio-group' && node.bind && !node.bind.startsWith('$')) info.radios.add(node.bind);
+    if (node.type === 'timer' && node.bind) {
+      const own = ownerOf(p, ancestors);
+      const inItem = node.bind.startsWith('$item.');
+      const f = inItem ? own.field?.itemFields?.find((x) => x.key === node.bind!.slice(6)) : p.state.find((x) => x.key === node.bind);
+      const cls = inItem ? own.cls : 'PluginViewModel';
+      const warn = typeof node.props.warnMinutes === 'number' ? node.props.warnMinutes : -1;
+      if (f?.type === 'datetime') info.clocks.set(cls, [...(info.clocks.get(cls) ?? []), [node.id, prop(f.key), node.props.mode === 'countdown', warn]]);
+    }
   }
   return info;
 }
@@ -121,6 +134,10 @@ function classBody(fields: StateField[], cls: string, info: VmInfo, out: string[
     out.push('');
   }
   for (const [name, expr] of info.vis.get(cls) ?? []) out.push(`${ind}public bool ${name} { get { return ${expr}; } }`);
+  for (const [id, P, cd, warn] of info.clocks.get(cls) ?? []) {
+    out.push(`${ind}public string ${clockProp(id)} { get { return Clock.Text(${P}, ${cd}); } }`);
+    out.push(`${ind}public bool ${clockOverProp(id)} { get { return Clock.Over(${P}, ${cd}, ${warn}d); } }`);
+  }
 }
 
 function listsIn(fields: StateField[]): StateField[] {
@@ -145,6 +162,8 @@ function viewModelCs(p: Project): string {
     `${I}public abstract class ObservableObject : INotifyPropertyChanged`, `${I}{`,
     `${I}${I}public event PropertyChangedEventHandler PropertyChanged;`,
     `${I}${I}protected void Raise(string name) { var h = PropertyChanged; if (h != null) h(this, new PropertyChangedEventArgs(name)); }`,
+    `${I}${I}/// <summary>Re-read every property (the timer clock calls this once a second).</summary>`,
+    `${I}${I}public void Refresh() { Raise(string.Empty); }`,
     `${I}${I}/// <summary>Set + notify. Also raises "" so computed labels, colors and show-when flags refresh.</summary>`,
     `${I}${I}protected void Set<T>(ref T field, T value, [CallerMemberName] string name = "")`,
     `${I}${I}{`, `${I}${I}${I}if (EqualityComparer<T>.Default.Equals(field, value)) return;`, `${I}${I}${I}field = value;`, `${I}${I}${I}Raise(name);`, `${I}${I}${I}Raise(string.Empty);`, `${I}${I}}`,
@@ -157,6 +176,22 @@ function viewModelCs(p: Project): string {
     `${I}${I}public void Execute(object parameter) { _run(parameter); }`,
     `${I}}`, '',
   ];
+  if (info.clocks.size) {
+    out.push(`${I}/// <summary>Timer text and warning checks (local time, matching DatePicker values).</summary>`, `${I}public static class Clock`, `${I}{`,
+      `${I}${I}public static string Text(DateTime? t, bool countdown)`, `${I}${I}{`,
+      `${I}${I}${I}if (!t.HasValue) return "--:--";`,
+      `${I}${I}${I}TimeSpan ms = countdown ? t.Value - DateTime.Now : DateTime.Now - t.Value;`,
+      `${I}${I}${I}string sign = ms < TimeSpan.Zero ? "-" : "";`,
+      `${I}${I}${I}TimeSpan a = ms.Duration();`,
+      `${I}${I}${I}return a.TotalHours >= 1 ? string.Format("{0}{1}:{2:00}:{3:00}", sign, (int)a.TotalHours, a.Minutes, a.Seconds) : string.Format("{0}{1:00}:{2:00}", sign, (int)a.TotalMinutes, a.Seconds);`,
+      `${I}${I}}`,
+      `${I}${I}/// <summary>Elapsed past warnMinutes, or countdown within warnMinutes (warnMinutes &lt; 0 = only once overdue).</summary>`,
+      `${I}${I}public static bool Over(DateTime? t, bool countdown, double warnMinutes)`, `${I}${I}{`,
+      `${I}${I}${I}if (!t.HasValue) return false;`,
+      `${I}${I}${I}double min = (countdown ? t.Value - DateTime.Now : DateTime.Now - t.Value).TotalMinutes;`,
+      `${I}${I}${I}return countdown ? (warnMinutes < 0 ? min < 0 : min <= warnMinutes) : warnMinutes >= 0 && min >= warnMinutes;`,
+      `${I}${I}}`, `${I}}`, '');
+  }
   for (const lf of listsIn(p.state)) {
     out.push(`${I}/// <summary>One record of ${lf.key}.</summary>`, `${I}public sealed class ${itemClass(lf.key)} : ObservableObject`, `${I}{`);
     classBody(lf.itemFields ?? [], itemClass(lf.key), info, out, I + I);
@@ -177,6 +212,13 @@ function viewModelCs(p: Project): string {
     out.push(`${I}${I}${I}${cmd(a.id)} = new RelayCommand(p => ${pascal(a.id)}(${t ? `p as ${t}` : ''}));`);
   }
   for (const lf of p.state.filter((f) => f.type === 'list')) out.push(`${I}${I}${I}${prop(lf.key)}.CollectionChanged += (s, e) => Raise(string.Empty);`);
+  if (info.clocks.size) {
+    // one clock for every timer; top-level list rows refresh too (timers in nested lists don't tick)
+    out.push(`${I}${I}${I}var clock = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };`,
+      `${I}${I}${I}clock.Tick += (s, e) =>`, `${I}${I}${I}{`, `${I}${I}${I}${I}Refresh();`,
+      ...p.state.filter((f) => f.type === 'list').map((lf) => `${I}${I}${I}${I}foreach (var it in ${prop(lf.key)}) it.Refresh();`),
+      `${I}${I}${I}};`, `${I}${I}${I}clock.Start();`);
+  }
   out.push(`${I}${I}}`, '');
   for (const a of p.actions) {
     const t = itemArg.get(a.id);
@@ -245,6 +287,14 @@ function xContainer(ctx: XCtx, c: ContainerNode, ind: string, common: string): s
       const tag = c.props.wrap ? 'WrapPanel' : 'StackPanel';
       const va = ({ start: 'Top', center: 'Center', end: 'Bottom', stretch: 'Stretch' } as Record<string, string>)[String(c.props.align ?? 'center')];
       return [`${ind}<${tag} Orientation="Horizontal"${common}>`, `${i2}<!-- align children: ${va} -->`, ...xKids(ctx, c, i2, 'h'), `${ind}</${tag}>`];
+    }
+    case 'grid': {
+      // UniformGrid has no spacing: each cell gets right/bottom margin instead
+      const g = typeof c.props.gap === 'number' ? c.props.gap : 8;
+      const cols = Math.max(1, Math.min(6, Math.round(Number(c.props.columns ?? 2)) || 2));
+      return [`${ind}<UniformGrid Columns="${cols}"${common}>`,
+        ...c.children.flatMap((ch) => [`${i2}<Border Margin="0,0,${g},${g}">`, ...xNode(ctx, ch, i2 + I, 'v', true, 0), `${i2}</Border>`]),
+        `${ind}</UniformGrid>`];
     }
     case 'section': return [`${ind}<GroupBox Header="${a(c.props.title)}" Padding="6"${common}>`, `${i2}<StackPanel>`, ...xKids(ctx, c, i2 + I, 'v'), `${i2}</StackPanel>`, `${ind}</GroupBox>`];
     case 'collapsible': return [`${ind}<Expander Header="${a(c.props.title)}" IsExpanded="${c.props.startOpen === false ? 'False' : 'True'}"${common}>`, `${i2}<StackPanel Margin="6">`, ...xKids(ctx, c, i2 + I, 'v'), `${i2}</StackPanel>`, `${ind}</Expander>`];
@@ -340,6 +390,29 @@ function xElement(ctx: XCtx, n: ElementNode, ind: string, common: string, dir: '
         : one('<Border CornerRadius="10" Padding="8,2" HorizontalAlignment="Left" Background="#6B7280"><TextBlock Text="Status" Foreground="White" /></Border>');
       break;
     case 'empty-state': out = one(`<TextBlock Text="${a(p.text)}" FontStyle="Italic" Opacity="0.7" HorizontalAlignment="Center" Padding="0,12" />`); break;
+    case 'alert': {
+      const c = ALERT_COLORS[String(p.tone ?? 'info')] ?? ALERT_COLORS.info!;
+      out = one(`<Border Background="${c.bg}" Padding="10,8" CornerRadius="3"><TextBlock Text="${b ? b.binding() : a(p.text)}" Foreground="${c.fg}" TextWrapping="Wrap" /></Border>`);
+      break;
+    }
+    case 'stat': {
+      // StringFormat carries the unit; strip characters that would break the format string or the XAML
+      const unit = typeof p.unit === 'string' ? p.unit.replace(/[{}'"\\]/g, '') : '';
+      const value = b ? b.binding(b.field.type === 'enum' && b.field.options?.length ? 'Label' : '', unit ? `StringFormat='{}{0} ${a(unit)}'` : '') : '—';
+      out = one(`<Border BorderBrush="#555" BorderThickness="1" CornerRadius="3" Padding="8,6"><StackPanel HorizontalAlignment="Center"><TextBlock Text="${value}" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" /><TextBlock Text="${a(p.caption)}" Opacity="0.7" HorizontalAlignment="Center" TextWrapping="Wrap" /></StackPanel></Border>`);
+      break;
+    }
+    case 'timer': {
+      const inItem = !!n.bind?.startsWith('$item.');
+      const path = (name: string) => (inItem ? `{Binding ${name}}` : vmBinding(ctx, name));
+      out = b?.field.type === 'datetime'
+        ? labelled(n, ind, common, (i) => [`${i}<TextBlock Text="${path(clockProp(n.id))}" FontFamily="Consolas" FontSize="22" FontWeight="Bold">`,
+          `${i}${I}<TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers><DataTrigger Binding="${path(clockOverProp(n.id))}" Value="True"><Setter Property="Foreground" Value="#E53935" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>`,
+          `${i}</TextBlock>`])
+        : labelled(n, ind, common, (i) => [`${i}<TextBlock Text="--:--" FontFamily="Consolas" FontSize="22" FontWeight="Bold" />`]);
+      break;
+    }
+    case 'loading': out = one(`<StackPanel Orientation="Horizontal"><ProgressBar IsIndeterminate="True" Width="80" Height="8" VerticalAlignment="Center" /><TextBlock Text="${a(p.text ?? 'Loading…')}" Margin="8,0,0,0" Opacity="0.7" /></StackPanel>`); break;
     case 'table': {
       const cols = Array.isArray(p.columns) ? (p.columns as string[]) : [];
       const lf = b?.field.type === 'list' ? b.field : undefined;

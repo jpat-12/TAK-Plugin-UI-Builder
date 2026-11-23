@@ -57,6 +57,13 @@ export const CONTAINERS: Record<ContainerType, ComponentSpec> = {
     props: { gap: { kind: 'number', label: 'Spacing', default: 8, min: 0 }, align: { kind: 'enum', label: 'Align', options: ALIGN, default: 'center' }, wrap: { kind: 'boolean', label: 'Wrap to next line', default: false } },
     support: ALL_NATIVE,
   },
+  grid: {
+    // big-button field UIs and preset pickers (e.g. TAK-NZ SAR's 2×2 speed presets) — docs/PLUGIN_SURVEY.md
+    label: 'Grid', category: 'layout',
+    description: 'Equal-width columns that fill row by row. Good for big buttons and presets.',
+    props: { columns: { kind: 'number', label: 'Columns', default: 2, min: 1, max: 6 }, gap: { kind: 'number', label: 'Spacing', default: 8, min: 0 } },
+    support: ALL_NATIVE,
+  },
   tabs: {
     label: 'Tabs', category: 'layout',
     description: 'Tabbed pages. Each child is one tab and its title is the tab name.',
@@ -208,6 +215,40 @@ export const ELEMENTS: Record<string, ComponentSpec> = {
     props: { text: { kind: 'string', label: 'Text', required: true }, icon: { kind: 'string', label: 'Icon hint', noSpell: true } },
     support: ALL_NATIVE,
   },
+  // The four below came out of the GitHub plugin survey (docs/PLUGIN_SURVEY.md): each is a
+  // pattern several real TAK plugins hand-build that the catalog had no word for.
+  alert: {
+    label: 'Alert banner', category: 'display',
+    description: 'A colored banner for a warning, error, success or note. Bind it to show a live message.',
+    props: { text: { kind: 'string', label: 'Text', multiline: true }, tone: { kind: 'enum', label: 'Tone', options: ['info', 'success', 'warning', 'danger'], default: 'info' } },
+    bindTypes: ['string'],
+    support: support({ atak: 'approx', wintak: 'approx', takx: 'approx' }),
+  },
+  stat: {
+    label: 'Stat tile', category: 'display',
+    description: 'A big number with a caption, for dashboards: nodes online, patients, hours on shift.',
+    // "caption", not "label": every emitter treats a `label` prop as a field label above an input
+    props: { caption: { kind: 'string', label: 'Caption', required: true }, unit: { kind: 'string', label: 'Unit (e.g. min, %)' } },
+    bindTypes: ['number', 'string', 'enum'],
+    support: support({ atak: 'approx', wintak: 'approx', webtak: 'approx', takx: 'approx' }),
+  },
+  timer: {
+    label: 'Timer', category: 'display',
+    description: 'A live clock from a date/time field: time since it (tourniquet on, last check-in) or time left until it. Turns red at the warning point.',
+    props: {
+      label: { kind: 'string', label: 'Label' },
+      mode: { kind: 'enum', label: 'Counts', options: ['elapsed', 'countdown'], default: 'elapsed' },
+      warnMinutes: { kind: 'number', label: 'Turn red at (minutes)', min: 0 },
+    },
+    bindTypes: ['datetime'],
+    support: support({ atak: 'approx', wintak: 'approx', webtak: 'approx', takx: 'approx' }),
+  },
+  loading: {
+    label: 'Loading', category: 'display',
+    description: 'A spinner with a message. Pair with "Show only when" so it appears while something loads.',
+    props: { text: { kind: 'string', label: 'Text', default: 'Loading…' } },
+    support: ALL_NATIVE,
+  },
 
   // ---- data ----
   table: {
@@ -276,6 +317,7 @@ export const ELEMENTS: Record<string, ComponentSpec> = {
 
 // TAKX (Swing): components with no stock Swing widget or that need the TAKX globe/contacts APIs.
 // Applied after the tables so each entry above keeps reading as "how the other platforms do".
+// (alert/stat/timer already say 'approx' for takx in their own entries)
 const TAKX_APPROX = ['collapsible', 'list', 'toggle', 'status-badge', 'icon-button', 'map-point-picker', 'coordinate-field',
   'contact-picker', 'callsign', 'map-item-ref', 'cot-type-picker', 'data-package-attach', 'chat-send'];
 // copy before writing: components that use ALL_NATIVE directly share that one object

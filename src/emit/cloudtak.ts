@@ -22,6 +22,8 @@ interface Ctx {
   imports: Set<string>;
   scopes: Scope[];
   tabs: string[];
+  /** a timer is on this panel: it needs the 1-second `now` clock */
+  clock: boolean;
 }
 
 const T = '  ';
@@ -105,7 +107,21 @@ function stateTs(p: Project): string {
     'export function colorOf(options: Option[], value: string): string {',
     `${T}return options.find((o) => o.value === value)?.color ?? '#6B7280';`, '}', '',
     'export function fmtPoint(p: { lat: number; lon: number } | null): string {',
-    `${T}return p ? \`\${p.lat.toFixed(5)}, \${p.lon.toFixed(5)}\` : 'Not set';`, '}', '');
+    `${T}return p ? \`\${p.lat.toFixed(5)}, \${p.lon.toFixed(5)}\` : 'Not set';`, '}', '',
+    '/** Timer text: time since `iso` (elapsed) or until it (countdown) as [-]mm:ss or h:mm:ss; "--:--" when unset */',
+    'export function fmtClock(iso: string, now: number, countdown: boolean): string {',
+    `${T}const t = Date.parse(iso);`,
+    `${T}if (Number.isNaN(t)) return '--:--';`,
+    `${T}const ms = countdown ? t - now : now - t;`,
+    `${T}const s = Math.floor(Math.abs(ms) / 1000);`,
+    `${T}const two = (n: number) => String(n).padStart(2, '0');`,
+    `${T}return (ms < 0 ? '-' : '') + (s >= 3600 ? \`\${Math.floor(s / 3600)}:\${two(Math.floor(s / 60) % 60)}:\${two(s % 60)}\` : \`\${two(Math.floor(s / 60))}:\${two(s % 60)}\`);`, '}', '',
+    '/** Past the warning point: elapsed >= warnMs, or countdown remaining <= warnMs (warnMs < 0 = only once overdue) */',
+    'export function clockOver(iso: string, now: number, countdown: boolean, warnMs: number): boolean {',
+    `${T}const t = Date.parse(iso);`,
+    `${T}if (Number.isNaN(t)) return false;`,
+    `${T}const ms = countdown ? t - now : now - t;`,
+    `${T}return countdown ? (warnMs < 0 ? ms < 0 : ms <= warnMs) : warnMs >= 0 && ms >= warnMs;`, '}', '');
   return out.join('\n');
 }
 
@@ -205,6 +221,10 @@ function container(ctx: Ctx, c: ContainerNode, ind: string, attrs: (cls: string,
     case 'row': {
       const align = ({ start: 'align-items-start', center: 'align-items-center', end: 'align-items-end', stretch: 'align-items-stretch' } as Record<string, string>)[String(c.props.align ?? 'center')];
       return [`${ind}<div ${attrs(`d-flex ${align}${c.props.wrap ? ' flex-wrap' : ''}`, ` style="gap: ${gap}px"`)}>`, ...kids(ctx, c, i2), `${ind}</div>`];
+    }
+    case 'grid': {
+      const cols = Math.max(1, Math.min(6, Math.round(Number(c.props.columns ?? 2)) || 2));
+      return [`${ind}<div ${attrs('', ` style="display: grid; grid-template-columns: repeat(${cols}, minmax(0, 1fr)); gap: ${gap}px"`)}>`, ...kids(ctx, c, i2), `${ind}</div>`];
     }
     case 'section':
       return [`${ind}<div ${attrs('card')}>`,
@@ -314,6 +334,19 @@ function element(ctx: Ctx, n: ElementNode, ind: string, attrs: (cls: string, ext
       out = L(r?.opts ? `${ind}<span ${self(`badge text-white${p.size === 'large' ? ' fs-4' : ''}`)} :style="{ background: ${use(ctx, 'colorOf')}(${r.opts}, ${r.expr}) }">{{ ${esc(display(ctx, r))} }}</span>` : `${ind}<span ${self('badge')}>Status</span>`);
       break;
     case 'empty-state': out = L(`${ind}<div ${self('empty py-3')}><p class="empty-title">${esc(p.text)}</p></div>`); break;
+    case 'alert': out = L(`${ind}<div ${self(`alert alert-${esc(p.tone ?? 'info')} mb-0`, ' role="alert"')}>${r ? `{{ ${esc(display(ctx, r))} }}` : esc(p.text)}</div>`); break;
+    case 'stat':
+      out = L(`${ind}<div ${self('card card-sm text-center p-2')}><div class="h2 m-0">${r ? `{{ ${esc(display(ctx, r))} }}` : '—'}${p.unit ? `<small class="text-secondary ms-1">${esc(p.unit)}</small>` : ''}</div><div class="text-secondary small">${esc(p.caption)}</div></div>`);
+      break;
+    case 'timer': {
+      if (r?.field.type !== 'datetime') { out = labelWrap(n, ind, attrs, (i) => [`${i}<div ${self('h2 m-0 font-monospace')}>--:--</div>`]); break; }
+      ctx.clock = true;
+      const cd = p.mode === 'countdown';
+      const warn = typeof p.warnMinutes === 'number' ? Math.round(p.warnMinutes * 60000) : -1;
+      out = labelWrap(n, ind, attrs, (i) => [`${i}<div ${self('h2 m-0 font-monospace')} :class="{ 'text-danger': ${use(ctx, 'clockOver')}(${esc(r.expr)}, now, ${cd}, ${warn}) }">{{ ${use(ctx, 'fmtClock')}(${esc(r.expr)}, now, ${cd}) }}</div>`]);
+      break;
+    }
+    case 'loading': out = L(`${ind}<div ${self('d-flex align-items-center gap-2 text-secondary')}><span class="spinner-border spinner-border-sm" role="status"></span>${esc(p.text ?? 'Loading…')}</div>`); break;
     case 'table': {
       const cols = Array.isArray(p.columns) ? (p.columns as string[]) : [];
       const lr = r?.field.type === 'list' ? r : undefined;
@@ -351,14 +384,19 @@ function element(ctx: Ctx, n: ElementNode, ind: string, attrs: (cls: string, ext
 }
 
 function panelVue(p: Project, s: Screen): string {
-  const ctx: Ctx = { p, imports: new Set(), scopes: [], tabs: [] };
+  const ctx: Ctx = { p, imports: new Set(), scopes: [], tabs: [], clock: false };
   const body = node(ctx, s.root, T + T);
   const stateImports = [...ctx.imports].filter((x) => x !== 'actions').sort();
   const script = ["<script setup lang=\"ts\">", `// Screen "${commentSafe(s.title)}" (#${s.id}). ${HEADER_NOTE}`];
-  if (ctx.tabs.length) script.push("import { reactive } from 'vue';");
+  const vue = [...(ctx.clock ? ['onUnmounted'] : []), ...(ctx.tabs.length ? ['reactive'] : []), ...(ctx.clock ? ['ref'] : [])];
+  if (vue.length) script.push(`import { ${vue.join(', ')} } from 'vue';`);
   if (stateImports.length) script.push(`import { ${stateImports.join(', ')} } from '../state';`);
   if (ctx.imports.has('actions')) script.push("import { actions } from '../actions';");
   if (ctx.tabs.length) script.push('', '/** active tab index per tabs block */', `const tabs = reactive<Record<string, number>>({ ${ctx.tabs.map((t) => `'${t}': 0`).join(', ')} });`);
+  if (ctx.clock) {
+    script.push('', '/** one shared 1-second clock for every timer on this panel */', 'const now = ref(Date.now());',
+      'const clock = window.setInterval(() => { now.value = Date.now(); }, 1000);', 'onUnmounted(() => window.clearInterval(clock));');
+  }
   script.push('</script>');
   return [
     '<template>',

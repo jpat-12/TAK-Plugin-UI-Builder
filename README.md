@@ -24,6 +24,10 @@ your own Claude API key, entered in the browser and never sent anywhere but the 
 > **TAKX** is supported too (added from the TAKX 5.8.0 SDK: Swing panels mounted through `IUISpaceManager`).
 > The "Build plugin" button is still deferred by decision. **New here?** Click **Tour**, or read
 > [docs/WALKTHROUGH.md](docs/WALKTHROUGH.md).
+>
+> **2026-11-23:** grid, alert banner, stat tile, timer and loading components plus a `notify` action,
+> from a survey of 44 real TAK plugins on GitHub ([docs/PLUGIN_SURVEY.md](docs/PLUGIN_SURVEY.md)), and a
+> Mass Casualty Triage template that uses them all.
 
 ## The key insight
 
@@ -74,7 +78,7 @@ src/
                               themes/{atak,cloudtak,wintak,webtak}.css, frames.ts, preview.ts (sample values)
   spell/                      text.ts (every user-facing string + write-back), words.ts (tokenize, TAK vocab,
                               find/replace), dictionary.ts (lazy typo-js en_US), SpellList.vue
-  templates/                  5 starter projects (*.takui.json) + index.ts (gallery metadata)
+  templates/                  6 starter projects (*.takui.json) + index.ts (gallery metadata)
   tour/                       steps.ts (14 self-checking steps + their demos), Tour.vue (card + spotlight),
                               Demo.vue (ghost-cursor "Show me" animations: drag / click / type / keys), state.ts
   emit/                       code generators (pure Project → files): common.ts (naming, escaping),
@@ -116,10 +120,10 @@ test/
 |---|---|
 | `meta` | name, `packageId` (reverse DNS), version, targets (≥1) |
 | `state` | the plugin's data fields: `string number boolean enum datetime point contact list`. Enums carry option colors; lists carry `itemFields` |
-| `actions` | `{id, label, intent, kind}`, where kind is `cot-send http map-pick navigate state-set custom` |
+| `actions` | `{id, label, intent, kind}`, where kind is `cot-send http map-pick navigate state-set notify custom` |
 | `entry` | the launch button, mapped per platform (ATAK toolbar, CloudTAK home menu, WinTAK ribbon, WebTAK menu) |
 | `screens` | `pane`, `dialog` or `settings`, each with a node tree |
-| nodes | containers (`stack row tabs section collapsible scroll list`) and elements from [catalog.ts](src/spec/catalog.ts): 29 elements, including 9 TAK-specific ones (map point picker, MGRS field, contact picker, ...) |
+| nodes | containers (`stack row grid tabs section collapsible scroll list`) and elements from [catalog.ts](src/spec/catalog.ts): 33 elements, including 9 TAK-specific ones (map point picker, MGRS field, contact picker, ...) |
 
 Each node may have `bind` (a data field, or `$item.<field>` inside a list), `on`
 (event → action), `visibleWhen` (a structured condition, not an expression language) and
@@ -149,16 +153,16 @@ Each node may have `bind` (a data field, or `$item.<field>` inside a list), `on`
 |---|---|---|
 | takui/v1 spec, catalog, validator, fixtures | §4–5, Phase 0 | ✅ Working |
 | Designer: palette, canvas, inspector, data + actions editors, undo, autosave, save/open | Phase 1 | ✅ Working |
-| Previews: ATAK, CloudTAK, WinTAK, WebTAK (TAKX: none until verified) | Phase 3 (pulled forward) | ✅ Working, approximate looks |
+| Previews: ATAK, CloudTAK, WinTAK, WebTAK, TAKX | Phase 3 (pulled forward) | ✅ Working, approximate looks |
 | Spell check of all user-facing text, project dictionary | added 2026-11-10 | ✅ Working |
-| Starter templates (5) + examples (2), guided tour | Phase 2 (pulled forward) | ✅ Working (tour driven end-to-end in Edge) |
+| Starter templates (6) + examples (2), guided tour | Phase 2 (pulled forward) | ✅ Working (tour driven end-to-end in Edge) |
 | Handoff: HANDOFF.md, zip, per-tab mockups, copy-prompt, agent notes + starter repos | Phase 2 | ✅ Working (export driven end-to-end in Edge) |
 | Code generators: ATAK, CloudTAK, WinTAK, WebTAK (+ Code tab, scaffold/ in the zip) | Phase 3 | ✅ Working, compiler-verified |
 | Describe a screen → Claude draft (preview, insert as screen or at selection, one undo) | Phase 4 | ✅ Working (request/repair tested; live call verified to reach the API, not yet run with a real key) |
 | TAKX: preview skin + Swing code generator (from the 5.8.0 SDK) | Phase 5 | ✅ Working (javac-verified against the documented API; not yet built against a real TAKX install) |
+| Survey-driven components: grid, alert, stat, timer, loading; `notify` action | added 2026-11-23 ([survey](docs/PLUGIN_SURVEY.md)) | ✅ Working, compiled on all five platforms via the triage template |
+| Map-item menu entries, map banners, pill groups, search box, split view | [survey](docs/PLUGIN_SURVEY.md) "Next" | ⬜ Ranked, not started |
 | "Build plugin" button | Phase 5 | ⬜ Deferred by decision |
-| Text → draft layout (Claude) | Phase 4 | ⬜ |
-| TAKX, "Build plugin" button | Phase 5 | ⬜ Deferred: TAKX's UI toolkit is unverified, so its support is `unverified` everywhere |
 
 ## Known gaps
 

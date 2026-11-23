@@ -55,6 +55,21 @@
 .k-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: .86em; font-weight: 600; color: #fff; white-space: nowrap; align-self: flex-start; }
 .k-badge.large { padding: 6px 14px; font-size: 1.07em; border-radius: var(--k-radius); }
 .k-empty { text-align: center; color: var(--k-fg2); padding: 18px 8px; font-style: italic; }
+/* alert/stat/timer/loading: fixed status hues (same on every platform, like the generated code) */
+.k-alert { padding: 8px 10px; border-radius: var(--k-radius); border-left: 4px solid; font-size: .93em; white-space: pre-line; }
+.k-alert.info { background: rgba(30, 136, 229, .16); border-color: #1e88e5; }
+.k-alert.success { background: rgba(46, 125, 50, .2); border-color: #43a047; }
+.k-alert.warning { background: rgba(249, 168, 37, .18); border-color: #f9a825; }
+.k-alert.danger { background: rgba(198, 40, 40, .2); border-color: #e53935; }
+.k-stat { display: flex; flex-direction: column; align-items: center; padding: 8px 6px; background: var(--k-bg2); border: 1px solid var(--k-line); border-radius: var(--k-radius); min-width: 0; }
+.k-stat b { font-size: 1.7em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.k-stat b em { font-size: .5em; font-style: normal; color: var(--k-fg2); margin-left: 3px; }
+.k-stat span { font-size: .8em; color: var(--k-fg2); text-align: center; }
+.k-timer { font: 600 1.5em/1.2 ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.k-timer.warn { color: #e53935; }
+.k-loading { display: flex; align-items: center; gap: 10px; color: var(--k-fg2); padding: 6px 0; }
+.k-loading i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--k-track); border-top-color: var(--k-accent); animation: k-spin .9s linear infinite; }
+@keyframes k-spin { to { transform: rotate(360deg); } }
 
 .k-table { width: 100%; border-collapse: collapse; font-size: .93em; }
 .k-table th { text-align: left; color: var(--k-th); font-weight: 600; border-bottom: 1px solid var(--k-th); padding: 4px; }

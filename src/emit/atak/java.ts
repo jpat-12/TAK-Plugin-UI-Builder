@@ -235,6 +235,25 @@ const VIEW_IMPORTS = ['android.graphics.Color', 'android.text.Editable', 'androi
   'android.widget.FrameLayout', 'android.widget.ImageButton', 'android.widget.ImageView', 'android.widget.LinearLayout', 'android.widget.ListAdapter', 'android.widget.ListView',
   'android.widget.ProgressBar', 'android.widget.RadioGroup', 'android.widget.ScrollView', 'android.widget.SeekBar', 'android.widget.Spinner', 'android.widget.Switch', 'android.widget.TextView'];
 
+/** Timer formatting for epoch-millis datetimes (0 = not set). Shared with the TAKX emitter, which stores time the same way. */
+export const CLOCK_HELPERS = [
+  '/** Time since t (elapsed) or until t (countdown) as [-]mm:ss or h:mm:ss; "--:--" when t isn\'t set */',
+  'private static String clock(long t, boolean countdown) {',
+  '    if (t == 0L) return "--:--";',
+  '    long ms = countdown ? t - System.currentTimeMillis() : System.currentTimeMillis() - t;',
+  '    String sign = ms < 0 ? "-" : "";',
+  '    long s = Math.abs(ms) / 1000L;',
+  '    return s >= 3600L ? String.format(Locale.US, "%s%d:%02d:%02d", sign, s / 3600L, (s / 60L) % 60L, s % 60L)',
+  '        : String.format(Locale.US, "%s%02d:%02d", sign, s / 60L, s % 60L);',
+  '}',
+  '/** Past the warning point: elapsed >= warn, or countdown remaining <= warn (warn < 0 = only once overdue) */',
+  'private static boolean overdue(long t, boolean countdown, long warnMs) {',
+  '    if (t == 0L) return false;',
+  '    long ms = countdown ? t - System.currentTimeMillis() : System.currentTimeMillis() - t;',
+  '    return countdown ? (warnMs < 0 ? ms < 0 : ms <= warnMs) : warnMs >= 0 && ms >= warnMs;',
+  '}', '',
+];
+
 /** An expression that renders field `jf` (owned by `owner`, e.g. "state" / "item") as display text */
 function displayExpr(jf: JField, owner: string): string {
   const v = `${owner}.${jf.name}`;
@@ -282,6 +301,15 @@ export function screenViewsJava(p: Project, m: JavaModel, plan: ScreenPlan, cls:
   const fields = plan.views.filter((v) => v.role !== 'body' || v.tabIndex !== undefined);
   for (const v of fields) L(`public final ${v.javaType} ${javaIdent(v.field)};`);
   for (const l of plan.lists) L(`private final ${pascal(l.node.id)}Adapter ${camel(l.node.id)}Adapter = new ${pascal(l.node.id)}Adapter();`);
+  // timers (here or in list rows) need a clock: one tick per screen re-renders every second.
+  // View.post queues while the pane is detached, so the clock pauses when the pane is closed.
+  const ticks = [...plan.views, ...plan.lists.flatMap((l) => l.rowViews)].some((v) => v.node.type === 'timer');
+  if (ticks) {
+    L('private static final int WARN = 0xFFE53935;');
+    L('private final Runnable tick = new Runnable() {');
+    L('@Override public void run() { render(); root.postDelayed(this, 1000); }', 2);
+    L('};');
+  }
   L();
   L(`public ${cls}(View root, PluginState state, Actions actions) {`);
   L('this.root = root;', 2);
@@ -289,6 +317,7 @@ export function screenViewsJava(p: Project, m: JavaModel, plan: ScreenPlan, cls:
   L('this.actions = actions;', 2);
   for (const v of fields) L(`${javaIdent(v.field)} = root.findViewById(R.id.${v.resId});`, 2);
   L('wire();', 2);
+  if (ticks) L('root.post(tick);', 2);
   if (plan.views.some((v) => v.role === 'tab')) for (const t of new Set(plan.views.filter((v) => v.role === 'tab').map((v) => v.node.id))) L(`show${pascal(t)}Tab(0);`, 2);
   L('render();', 2);
   L('}');
@@ -411,7 +440,13 @@ export function screenViewsJava(p: Project, m: JavaModel, plan: ScreenPlan, cls:
       if (n.type === 'status-badge' && jf.f.type === 'enum' && jf.f.options?.length) {
         emitLine(`${f}.setText(${displayExpr(jf, owner)});`, ind);
         emitLine(`tint(${f}, PluginState.colorOf(${jf.constPrefix}VALUES, ${jf.constPrefix}COLORS, ${val}));`, ind);
-      } else if (n.type === 'progress' && jf.f.type === 'number') emitLine(`${f}.setProgress((int) ${val});`, ind);
+      } else if (n.type === 'timer' && jf.f.type === 'datetime') {
+        const cd = n.props.mode === 'countdown';
+        const warn = typeof n.props.warnMinutes === 'number' ? `${Math.round(n.props.warnMinutes * 60000)}L` : '-1L';
+        emitLine(`${f}.setText(clock(${val}, ${cd}));`, ind);
+        emitLine(`${f}.setTextColor(overdue(${val}, ${cd}, ${warn}) ? WARN : Color.WHITE);`, ind);
+      } else if (n.type === 'stat' && typeof n.props.unit === 'string' && n.props.unit) emitLine(`${f}.setText(${displayExpr(jf, owner)} + ${strLit(` ${n.props.unit}`)});`, ind);
+      else if (n.type === 'progress' && jf.f.type === 'number') emitLine(`${f}.setProgress((int) ${val});`, ind);
       else if (v.javaType === 'TextView' || v.javaType === 'EditText') emitLine(`${f}.setText(${n.type === 'map-point-picker' ? `${val} == null ? "Not set" : point(${val})` : displayExpr(jf, owner)});`, ind);
       return;
     }
@@ -502,6 +537,7 @@ export function screenViewsJava(p: Project, m: JavaModel, plan: ScreenPlan, cls:
     `${J}private static String fmt(double d) { return d == Math.rint(d) ? String.valueOf((long) d) : String.valueOf(d); }`,
     `${J}private static String point(double[] p) { return p == null ? "" : String.format(Locale.US, "%.5f, %.5f", p[0], p[1]); }`,
     `${J}private static String time(long t) { return t == 0L ? "" : DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(t)); }`, '',
+    ...(ticks ? CLOCK_HELPERS.map((l) => (l ? J + l : l)) : []),
     `${J}/** TextWatcher that ignores render()'s own writes */`,
     `${J}private abstract class AfterText implements TextWatcher {`,
     `${J}${J}abstract void changed(String s);`,
