@@ -8,6 +8,8 @@ import { toBlob } from 'html-to-image';
 import { useProject } from '../store/project';
 import { FRAMES, SKINNED } from '../skins/frames';
 import { themeVars } from '../skins/theme';
+import { bannerFor } from '../skins/banner';
+import BannerView from '../skins/BannerView.vue';
 import { frameKeyFor } from '../canvas/view';
 import { TARGET_NAMES } from '../spec/validate';
 import type { Screen, Target } from '../spec/types';
@@ -179,6 +181,7 @@ function goToProblems() {
           <span>{{ job.screen.surface === 'settings' && job.target === 'atak' ? `Settings › ${job.screen.title}` : job.screen.title }}</span>
           <span v-if="job.screen.surface !== 'dialog'" class="mx">✕</span>
         </div>
+        <BannerView v-if="bannerFor(p, job.screen)" :look="bannerFor(p, job.screen)!" />
         <div class="mbody"><CanvasNode :node="job.screen.root" :ctx="{ project: p }" is-root ghost mockup :target="job.target" :tab="job.tab" /></div>
         <div v-if="job.screen.surface === 'dialog'" class="d-buttons">
           <template v-if="job.target === 'atak'"><span>CANCEL</span><span>OK</span></template>

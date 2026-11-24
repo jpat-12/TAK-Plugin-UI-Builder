@@ -4,6 +4,8 @@ import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
 import { useProject } from '../store/project';
 import { FRAMES, SKINNED } from '../skins/frames';
 import { themeVars } from '../skins/theme';
+import { bannerFor } from '../skins/banner';
+import BannerView from '../skins/BannerView.vue';
 import { TARGET_NAMES } from '../spec/validate';
 import type { Target } from '../spec/types';
 import { frameChoice, frameKeyFor, previewTarget } from './view';
@@ -43,6 +45,7 @@ const ctx = computed(() => ({ project: store.project }));
 const s = computed(() => store.screen);
 const colors = computed(() => themeVars(store.project.theme));
 const entry = computed(() => store.project.entry);
+const banner = computed(() => bannerFor(store.project, s.value));
 const top = computed(() => (frame.value.chrome === 'window' ? 30 : 0) + (frame.value.topbar ?? 0));
 </script>
 
@@ -104,6 +107,7 @@ const top = computed(() => (frame.value.chrome === 'window' ? 30 : 0) + (frame.v
               <span>{{ s.surface === 'settings' ? (target === 'atak' ? `Settings › ${s.title}` : `${s.title} (settings)`) : s.title }}</span>
               <span class="x">✕</span>
             </div>
+            <BannerView v-if="banner" :look="banner" />
             <div class="scroll"><CanvasNode :node="s.root" :ctx="ctx" is-root /></div>
           </div>
         </div>

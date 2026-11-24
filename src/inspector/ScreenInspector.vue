@@ -6,6 +6,7 @@ import { TARGET_NAMES } from '../spec/validate';
 import { useProject } from '../store/project';
 import CommitField from './CommitField.vue';
 import LookEditor from './LookEditor.vue';
+import BannerEditor from './BannerEditor.vue';
 
 const store = useProject();
 const s = computed(() => store.screen);
@@ -53,6 +54,7 @@ const commitVersion = (v: string) => /^\d+\.\d+\.\d+$/.test(v) && (store.updateM
     </div>
 
     <LookEditor />
+    <BannerEditor />
   </div>
 </template>
 

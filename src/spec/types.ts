@@ -22,6 +22,8 @@ export interface Project {
   entry: Entry;
   /** The plugin's own colors, used across every screen. Optional: unset = each platform's default. */
   theme?: Theme;
+  /** A branded header across the top of the home screen (or every screen). Optional. */
+  banner?: Banner;
   screens: Screen[];
   /** Extra guidance carried into HANDOFF.md (PLAN.md Phase 2). Optional. */
   handoff?: HandoffSettings;
@@ -128,6 +130,29 @@ export interface Theme {
   /** Background of the screen's title bar */
   header?: string;
 }
+
+// ---- Banner: the plugin's branded header (name + logos), above a screen's own content ----
+
+/** "icon" = the uploaded launch icon (entry.iconImage); otherwise a PNG data: URL of its own */
+export type BannerLogo = 'icon' | string;
+
+export interface Banner {
+  /** Big text. Blank = the plugin's name. */
+  title?: string;
+  /** Smaller second line: agency, unit, version, motto */
+  subtitle?: string;
+  left?: BannerLogo;
+  right?: BannerLogo;
+  /** Where the text sits between the logos (default left) */
+  align?: 'left' | 'center';
+  /** Background (#RRGGBB). Unset = the title bar color (theme.header), else the platform's. */
+  background?: string;
+  /** home = only the screen the launch button opens (default); all = every pane screen */
+  showOn?: 'home' | 'all';
+}
+
+/** Pixel height uploaded banner logos are resized to (width keeps the aspect ratio, max 3×) */
+export const BANNER_LOGO_HEIGHT = 128;
 
 // ---- Screens + node tree ----
 

@@ -13,7 +13,7 @@ import { z } from 'zod';
 import {
   ACTION_KINDS, CONTAINER_TYPES, SPEC_VERSION, STATE_TYPES, SURFACES, TARGETS,
   type Action, type ContainerNode, type HandoffSettings, type ElementNode, type Entry, type Node, type Project,
-  type ProjectMeta, type Screen, type Theme, type StateField, type TargetOverrides, type VisibleWhen,
+  type Banner, type ProjectMeta, type Screen, type Theme, type StateField, type TargetOverrides, type VisibleWhen,
 } from './types';
 
 /** Code-safe identifier: emitters turn these into Java/C#/TS names */
@@ -59,10 +59,12 @@ const actionSchema: z.ZodType<Action> = z.object({
   params: z.record(z.string()).optional(),
 }).strict();
 
+const pngDataUrl = z.string().regex(/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/, 'must be a PNG image (base64 data: URL)');
+
 const entrySchema: z.ZodType<Entry> = z.object({
   label: z.string(),
   icon: z.string().optional(),
-  iconImage: z.string().regex(/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/, 'must be a PNG image (base64 data: URL)').optional(),
+  iconImage: pngDataUrl.optional(),
   openScreen: id,
 }).strict();
 
@@ -70,6 +72,17 @@ const themeSchema: z.ZodType<Theme> = z.object({
   accent: hex.optional(),
   primary: hex.optional(),
   header: hex.optional(),
+}).strict();
+
+const bannerLogo = z.union([z.literal('icon'), pngDataUrl]);
+const bannerSchema: z.ZodType<Banner> = z.object({
+  title: z.string().optional(),
+  subtitle: z.string().optional(),
+  left: bannerLogo.optional(),
+  right: bannerLogo.optional(),
+  align: z.enum(['left', 'center']).optional(),
+  background: hex.optional(),
+  showOn: z.enum(['home', 'all']).optional(),
 }).strict();
 
 const visibleWhenSchema: z.ZodType<VisibleWhen> = z.object({
@@ -125,6 +138,7 @@ export const projectSchema: z.ZodType<Project> = z.object({
   actions: z.array(actionSchema),
   entry: entrySchema,
   theme: themeSchema.optional(),
+  banner: bannerSchema.optional(),
   screens: z.array(screenSchema).min(1, 'a plugin needs at least one screen'),
   handoff: handoffSchema.optional(),
 }).strict();

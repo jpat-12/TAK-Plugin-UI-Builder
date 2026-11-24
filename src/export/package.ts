@@ -5,7 +5,7 @@ import JSZip from 'jszip';
 import { walk } from '../spec/tree';
 import type { Project, Screen, Target } from '../spec/types';
 import { emitScaffold } from '../emit';
-import { buildHandoff, buildPrompt, ICON_FILE, type MockupRef } from './handoff';
+import { bannerLogoFile, buildHandoff, buildPrompt, ICON_FILE, type MockupRef } from './handoff';
 
 /** tab: index into the screen's first tabs block (tabbed screens get one image per tab) */
 export interface RenderedMockup { target: Target; screen: string; png: Uint8Array; tab?: number; label?: string }
@@ -27,6 +27,10 @@ export function handoffFiles(p: Project, generatedAt: string, mockups: RenderedM
     'PROMPT.md': buildPrompt(p, 'zip'),
   };
   if (p.entry.iconImage) files[ICON_FILE] = dataUrlBytes(p.entry.iconImage);
+  for (const side of ['left', 'right'] as const) {
+    const l = p.banner?.[side];
+    if (l && l !== 'icon') files[bannerLogoFile(side)] = dataUrlBytes(l);
+  }
   for (const m of mockups) files[mockupPath(m.target, m.screen, m.tab)] = m.png;
   for (const [t, fm] of Object.entries(scaffold)) for (const [path, body] of Object.entries(fm ?? {})) files[`scaffold/${t}/${path}`] = body;
   return files;

@@ -219,6 +219,49 @@
           },
           "additionalProperties": false
         },
+        "banner": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "subtitle": {
+              "type": "string"
+            },
+            "left": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "icon"
+                },
+                {
+                  "$ref": "#/definitions/TakUiProject/properties/entry/properties/iconImage"
+                }
+              ]
+            },
+            "right": {
+              "$ref": "#/definitions/TakUiProject/properties/banner/properties/left"
+            },
+            "align": {
+              "type": "string",
+              "enum": [
+                "left",
+                "center"
+              ]
+            },
+            "background": {
+              "$ref": "#/definitions/TakUiProject/properties/state/items/properties/options/items/properties/color"
+            },
+            "showOn": {
+              "type": "string",
+              "enum": [
+                "home",
+                "all"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
         "screens": {
           "type": "array",
           "items": {

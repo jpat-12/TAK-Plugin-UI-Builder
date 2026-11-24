@@ -164,12 +164,22 @@ export function buildHandoff(p: Project, opts: HandoffOptions): string {
 }
 
 /** Prompt for Claude Code. 'zip' points at the unzipped folder; 'inline' embeds everything. */
-/** The spec minus the uploaded icon's base64 (too big to paste; the zip carries the PNG) */
-function withoutIconImage(p: Project): Project {
-  if (!p.entry.iconImage) return p;
-  const { iconImage: _drop, ...entry } = p.entry;
-  return { ...p, entry };
+/** The spec minus uploaded pictures' base64 (too big to paste; the zip carries the PNGs) */
+function withoutImages(p: Project): Project {
+  const out: Project = { ...p };
+  if (p.entry.iconImage) {
+    const { iconImage: _drop, ...entry } = p.entry;
+    out.entry = entry;
+  }
+  if (p.banner) {
+    const banner = { ...p.banner };
+    // a logo with its own picture is described in HANDOFF.md (assets/banner-<side>.png)
+    for (const side of ['left', 'right'] as const) if (banner[side] && banner[side] !== 'icon') delete banner[side];
+    out.banner = banner;
+  }
+  return out;
 }
+const hasImages = (p: Project) => !!p.entry.iconImage || [p.banner?.left, p.banner?.right].some((l) => l && l !== 'icon');
 
 export function buildPrompt(p: Project, mode: 'zip' | 'inline', handoffMd = ''): string {
   const targets = p.meta.targets.map((t) => TARGET_NAMES[t]).join(', ');
@@ -189,13 +199,13 @@ export function buildPrompt(p: Project, mode: 'zip' | 'inline', handoffMd = ''):
     '',
     'Below are the design handoff (HANDOFF.md) and the machine-readable spec (ui-spec.json). Save both into the project as docs/HANDOFF.md and docs/ui-spec.json, summarize your plan per platform and list any questions about unclear actions before writing code, then implement and finish with the acceptance checklist.',
     '',
-    ...(p.entry.iconImage ? [`The launch icon image (${ICON_FILE}) is too big to paste here. Ask me for it before you wire up the launch button; it comes in the builder's zip export.`, ''] : []),
+    ...(hasImages(p) ? [`The pictures (launch icon / banner logos, under assets/) are too big to paste here. Ask me for them before you build the launch button or banner; they come in the builder's zip export.`, ''] : []),
     '<HANDOFF.md>',
     handoffMd.trim(),
     '</HANDOFF.md>',
     '',
     '<ui-spec.json>',
-    JSON.stringify(withoutIconImage(p), null, 2),
+    JSON.stringify(withoutImages(p), null, 2),
     '</ui-spec.json>',
     '',
   ].join('\n');
@@ -216,7 +226,7 @@ const THEME_ROLES: { key: keyof Theme; name: string; where: string }[] = [
 function lookSection(p: Project, line: (s?: string) => void) {
   const t = p.theme ?? {};
   const roles = THEME_ROLES.filter((r) => t[r.key]);
-  if (!p.entry.iconImage && !roles.length) return;
+  if (!p.entry.iconImage && !roles.length && !p.banner) return;
   line('## Look and feel');
   line();
   if (p.entry.iconImage) {
@@ -231,8 +241,31 @@ function lookSection(p: Project, line: (s?: string) => void) {
     line();
     line('Define them once per platform (Android `res/values/colors.xml`, a WPF `ResourceDictionary`, CSS custom properties for CloudTAK/WebTAK, one Java `Color` constants class for TAKX) and reference them; don\'t repeat hex values in layouts.');
   }
+  if (p.banner) bannerLines(p, line);
   line();
 }
+
+/** Zip path of a banner logo that is its own picture (the launch icon reuses ICON_FILE) */
+export const bannerLogoFile = (side: 'left' | 'right') => `assets/banner-${side}.png`;
+
+function bannerLines(p: Project, line: (s?: string) => void) {
+  const b = p.banner!;
+  const home = p.screens.find((s) => s.id === p.entry.openScreen);
+  const logo = (side: 'left' | 'right') => {
+    const l = b[side];
+    if (l === undefined) return null;
+    return l === 'icon' ? `the launch icon (${code(ICON_FILE)})` : `${code(bannerLogoFile(side))}`;
+  };
+  const [left, right] = [logo('left'), logo('right')];
+  const bg = b.background ?? p.theme?.header;
+  if (roles(p).length || p.entry.iconImage) line();
+  line(`- **Home banner** on ${b.showOn === 'all' ? 'every pane and settings screen (not dialogs)' : `the home screen${home ? ` "${esc(home.title)}" (${code(home.id)})` : ''} only`}: one full-width strip directly under the title bar, above the screen's own content. It is not a component in the tree; build it once and reuse it.`);
+  line(`  - Title: "${esc(b.title?.trim() || p.meta.name)}"${b.title?.trim() ? '' : ' (the plugin name)'}, bold, larger than body text${b.subtitle?.trim() ? `; second line underneath, smaller: "${esc(b.subtitle.trim())}"` : ''}. Text is ${b.align === 'center' ? 'centered between the logos' : 'left-aligned (after the left logo)'}.`);
+  line(`  - Logos (about 44 dp/px tall, keep the aspect ratio): ${[left && `left: ${left}`, right && `right: ${right}`].filter(Boolean).join('; ') || 'none, text only'}.`);
+  line(`  - Background: ${bg ? `${code(bg)}, text ${code(textOn(bg))}` : "the platform's header/section color"}; a 2 px line in the highlight color along the bottom.`);
+}
+
+const roles = (p: Project) => THEME_ROLES.filter((r) => p.theme?.[r.key]);
 
 function typeWords(f: StateField): string {
   switch (f.type) {

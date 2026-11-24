@@ -8,7 +8,7 @@ import { cloneWithNewIds, createNode, newProject, uniqueId } from '../spec/facto
 import { loadProject } from '../spec/load';
 import { projectSchema } from '../spec/schema';
 import { allNodeIds, contains, fieldAt, locate, resolveKey, walk, walkWithAncestors } from '../spec/tree';
-import type { Action, ContainerType, Node, Project, PropValue, Screen, StateField, Surface, Target, Theme, VisibleWhen } from '../spec/types';
+import type { Action, Banner, ContainerType, Node, Project, PropValue, Screen, StateField, Surface, Target, Theme, VisibleWhen } from '../spec/types';
 
 const IDENT = /^[a-zA-Z][a-zA-Z0-9_]*$/;
 import { validateProject, type Issue } from '../spec/validate';
@@ -317,6 +317,14 @@ export const useProject = defineStore('project', () => {
   }
   const updateEntry = (patch: Partial<Project['entry']>) =>
     mutate((p) => { Object.assign(p.entry, patch); dropUndefined(p.entry); }, `entry:${Object.keys(patch).join()}`);
+  /** Show (patch) or remove (null) the banner; undefined fields go back to their defaults */
+  const updateBanner = (patch: Banner | null) =>
+    mutate((p) => {
+      if (patch === null) { delete p.banner; return; }
+      const b: Banner = { ...p.banner, ...patch };
+      dropUndefined(b);
+      p.banner = b;
+    }, patch ? `banner:${Object.keys(patch).join()}` : 'banner:remove');
   /** Set or clear (undefined) custom colors; an empty theme is removed so the file stays clean */
   const updateTheme = (patch: Theme) =>
     mutate((p) => {
@@ -524,7 +532,7 @@ export const useProject = defineStore('project', () => {
     addNode, insertionPoint, canMove, moveNode, removeNode, duplicateNode, nudge, canIndent, indent, canOutdent, outdent,
     setProp, setBind, setEvent, setVisibleWhen, setHiddenOn, setContainerType, renameNode, addTab,
     addScreen, removeScreen, updateScreen, renameScreen,
-    updateMeta, toggleTarget, updateEntry, updateTheme,
+    updateMeta, toggleTarget, updateEntry, updateTheme, updateBanner,
     addState, updateState, renameStateKey, removeState,
     updateFieldAt, renameFieldAt, renameOptionAt, addItemFieldAt, removeFieldAt,
     addAction, updateAction, renameAction, removeAction,
