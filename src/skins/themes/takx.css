@@ -5,9 +5,9 @@
   --k-font: 13px/1.4 'Segoe UI', system-ui, sans-serif;
   --k-bg: #2b2b2b; --k-bg2: #323232; --k-fg: #f0f0f0; --k-fg2: #a9a9a9; --k-line: #4a4a4a; --k-placeholder: #7a7a7a;
   --k-accent: #c9a24a; --k-radius: 3px; --k-caps: none;
-  --k-btn: #3a3a3a; --k-btn-border: #555; --k-primary: #4a4a4a; --k-primary-border: #c9a24a; --k-primary-fg: #fff;
+  --k-btn: #3a3a3a; --k-btn-border: #555; --k-primary: #4a4a4a; --k-primary-border: var(--k-accent); --k-primary-fg: #fff;
   --k-danger: #b52a2a; --k-track: #555; --k-th: #f0f0f0;
-  --k-tabbar: #262626; --k-head: #363636; --k-titlebar: #3a3424; --k-title-line: #c9a24a;
+  --k-tabbar: #262626; --k-head: #363636; --k-titlebar: #3a3424; --k-title-line: var(--k-accent);
 }
 .skin-takx .k-edit, .skin-takx .k-spinner { border: 1px solid #5a5a5a; background: #222; padding: 3px 8px; min-height: 28px; }
 .skin-takx .k-edit.area { border-bottom-width: 1px; }

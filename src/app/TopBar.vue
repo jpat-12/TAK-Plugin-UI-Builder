@@ -8,6 +8,7 @@ import { useProject } from '../store/project';
 import { draftOpen, galleryOpen, signals } from './ui';
 import { tourActive } from '../tour/state';
 import { exportOpen } from '../export/state';
+import { CHANNEL } from './channel';
 
 const store = useProject();
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -36,6 +37,7 @@ function onSave() {
 <template>
   <header class="top">
     <span class="brand">TAK Plugin UI Builder</span>
+    <span v-if="CHANNEL === 'dev'" class="devtag" title="Preview of upcoming features. Projects here are kept separate from the live site; use Save file to keep anything important.">DEV PREVIEW</span>
     <span class="name">{{ store.project.meta.name || 'Untitled' }} <small>v{{ store.project.meta.version }}</small></span>
     <span class="spacer" />
     <button title="Take the 2-minute guided tour" @click="tourActive = true">Tour</button>
@@ -52,6 +54,7 @@ function onSave() {
 </template>
 
 <style scoped>
+.devtag { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: #fff; background: #c2410c; border-radius: 4px; padding: 2px 6px; margin-left: 8px; }
 .top { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
 .brand { font-weight: 700; font-size: 14px; }
 .name { color: var(--muted); font-size: 13px; margin-left: 10px; }

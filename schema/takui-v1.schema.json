@@ -190,6 +190,10 @@
             "icon": {
               "type": "string"
             },
+            "iconImage": {
+              "type": "string",
+              "pattern": "^data:image\\/png;base64,[A-Za-z0-9+/]+={0,2}$"
+            },
             "openScreen": {
               "$ref": "#/definitions/TakUiProject/properties/actions/items/properties/id"
             }
@@ -198,6 +202,64 @@
             "label",
             "openScreen"
           ],
+          "additionalProperties": false
+        },
+        "theme": {
+          "type": "object",
+          "properties": {
+            "accent": {
+              "$ref": "#/definitions/TakUiProject/properties/state/items/properties/options/items/properties/color"
+            },
+            "primary": {
+              "$ref": "#/definitions/TakUiProject/properties/state/items/properties/options/items/properties/color"
+            },
+            "header": {
+              "$ref": "#/definitions/TakUiProject/properties/state/items/properties/options/items/properties/color"
+            }
+          },
+          "additionalProperties": false
+        },
+        "banner": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "subtitle": {
+              "type": "string"
+            },
+            "left": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "icon"
+                },
+                {
+                  "$ref": "#/definitions/TakUiProject/properties/entry/properties/iconImage"
+                }
+              ]
+            },
+            "right": {
+              "$ref": "#/definitions/TakUiProject/properties/banner/properties/left"
+            },
+            "align": {
+              "type": "string",
+              "enum": [
+                "left",
+                "center"
+              ]
+            },
+            "background": {
+              "$ref": "#/definitions/TakUiProject/properties/state/items/properties/options/items/properties/color"
+            },
+            "showOn": {
+              "type": "string",
+              "enum": [
+                "home",
+                "all"
+              ]
+            }
+          },
           "additionalProperties": false
         },
         "screens": {

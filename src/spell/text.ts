@@ -11,6 +11,7 @@ export type TextLoc =
   | { k: 'screen'; screen: string }
   | { k: 'meta'; field: 'name' | 'description' }
   | { k: 'entry' }
+  | { k: 'banner'; field: 'title' | 'subtitle' }
   | { k: 'field-label'; path: string[] }
   | { k: 'field-desc'; path: string[] }
   | { k: 'option'; path: string[]; i: number }
@@ -35,6 +36,8 @@ export function collectText(p: Project): TextSpot[] {
   add({ k: 'meta', field: 'name' }, p.meta.name, 'Plugin name');
   add({ k: 'meta', field: 'description' }, p.meta.description, 'Plugin description');
   add({ k: 'entry' }, p.entry.label, 'Launch button label');
+  add({ k: 'banner', field: 'title' }, p.banner?.title, 'Banner › Title');
+  add({ k: 'banner', field: 'subtitle' }, p.banner?.subtitle, 'Banner › Second line');
 
   for (const s of p.screens) {
     add({ k: 'screen', screen: s.id }, s.title, `Screen "${s.id}" › Title`, s.id);
@@ -84,6 +87,7 @@ export function setText(p: Project, loc: TextLoc, value: string): void {
     case 'screen': { const s = p.screens.find((x) => x.id === loc.screen); if (s) s.title = value; return; }
     case 'meta': p.meta[loc.field] = value; return;
     case 'entry': p.entry.label = value; return;
+    case 'banner': if (p.banner) p.banner[loc.field] = value; return;
     case 'field-label': { const f = fieldAt(p, loc.path); if (f) f.label = value; return; }
     case 'field-desc': { const f = fieldAt(p, loc.path); if (f) f.description = value; return; }
     case 'option': { const o = fieldAt(p, loc.path)?.options?.[loc.i]; if (o) o.label = value; return; }

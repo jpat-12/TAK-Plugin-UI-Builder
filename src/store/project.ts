@@ -8,7 +8,7 @@ import { cloneWithNewIds, createNode, newProject, uniqueId } from '../spec/facto
 import { loadProject } from '../spec/load';
 import { projectSchema } from '../spec/schema';
 import { allNodeIds, contains, fieldAt, locate, resolveKey, walk, walkWithAncestors } from '../spec/tree';
-import type { Action, ContainerType, Node, Project, PropValue, Screen, StateField, Surface, Target, VisibleWhen } from '../spec/types';
+import type { Action, Banner, ContainerType, Node, Project, PropValue, Screen, StateField, Surface, Target, Theme, VisibleWhen } from '../spec/types';
 
 const IDENT = /^[a-zA-Z][a-zA-Z0-9_]*$/;
 import { validateProject, type Issue } from '../spec/validate';
@@ -16,9 +16,11 @@ import type { DraftResult } from '../ai/draft';
 import { dictionary } from '../spell/dictionary';
 import { collectText, setText } from '../spell/text';
 import { findMisspellings, replaceWord, type Misspelling } from '../spell/words';
+import { CHANNEL, storageKeyFor } from '../app/channel';
 
-/** Versioned key: on a breaking spec change, bump instead of migrating stale browser copies */
-export const STORAGE_KEY = 'takui:v1';
+/** Versioned key: on a breaking spec change, bump instead of migrating stale browser copies.
+ *  The dev preview uses its own key (app/channel.ts) so it never touches live autosaves. */
+export const STORAGE_KEY = storageKeyFor(CHANNEL);
 const UNDO_LIMIT = 100;
 /** Edits with the same coalesce key inside this window share one undo step (typing) */
 const COALESCE_MS = 1000;
@@ -316,7 +318,22 @@ export const useProject = defineStore('project', () => {
     mutate((p) => { p.meta.targets = has ? p.meta.targets.filter((x) => x !== t) : [...p.meta.targets, t]; });
   }
   const updateEntry = (patch: Partial<Project['entry']>) =>
-    mutate((p) => { Object.assign(p.entry, patch); }, `entry:${Object.keys(patch).join()}`);
+    mutate((p) => { Object.assign(p.entry, patch); dropUndefined(p.entry); }, `entry:${Object.keys(patch).join()}`);
+  /** Show (patch) or remove (null) the banner; undefined fields go back to their defaults */
+  const updateBanner = (patch: Banner | null) =>
+    mutate((p) => {
+      if (patch === null) { delete p.banner; return; }
+      const b: Banner = { ...p.banner, ...patch };
+      dropUndefined(b);
+      p.banner = b;
+    }, patch ? `banner:${Object.keys(patch).join()}` : 'banner:remove');
+  /** Set or clear (undefined) custom colors; an empty theme is removed so the file stays clean */
+  const updateTheme = (patch: Theme) =>
+    mutate((p) => {
+      const t: Theme = { ...p.theme, ...patch };
+      dropUndefined(t);
+      if (Object.keys(t).length) p.theme = t; else delete p.theme;
+    }, `theme:${Object.keys(patch).join()}`);
 
   // ---- data fields ----
   // Fields are addressed by key path: ['incidents'] is top-level, ['incidents', 'priority'] is
@@ -517,21 +534,32 @@ export const useProject = defineStore('project', () => {
     addNode, insertionPoint, canMove, moveNode, removeNode, duplicateNode, nudge, canIndent, indent, canOutdent, outdent,
     setProp, setBind, setEvent, setVisibleWhen, setHiddenOn, setContainerType, renameNode, addTab,
     addScreen, removeScreen, updateScreen, renameScreen,
-    updateMeta, toggleTarget, updateEntry,
+    updateMeta, toggleTarget, updateEntry, updateTheme, updateBanner,
     addState, updateState, renameStateKey, removeState,
     updateFieldAt, renameFieldAt, renameOptionAt, addItemFieldAt, removeFieldAt,
     addAction, updateAction, renameAction, removeAction,
   };
 });
 
+/** Optional fields are absent, never `undefined` (keeps saved JSON and snapshots stable) */
+function dropUndefined(o: object) {
+  for (const [k, v] of Object.entries(o)) if (v === undefined) delete (o as Record<string, unknown>)[k];
+}
+
 function restore(): { project: Project; note: string } {
   let raw: string | null = null;
+  let note = '';
   try { raw = localStorage.getItem(STORAGE_KEY); } catch { /* storage blocked: start fresh */ }
+  // first visit to the dev preview: start from a COPY of the live autosave (read only, never written back)
+  if (!raw && CHANNEL === 'dev') {
+    try { raw = localStorage.getItem(storageKeyFor('live')); } catch { /* blocked */ }
+    if (raw) note = 'This is the dev preview. It opened a copy of your project from the live site; changes here stay in the dev preview and never change the live one.';
+  }
   if (!raw) return { project: newProject(), note: '' };
   const r = loadProject(raw);
-  if (r.ok) return { project: r.project, note: '' };
+  if (r.ok) return { project: r.project, note };
   try { localStorage.setItem(`${STORAGE_KEY}:recovered`, raw); } catch { /* best effort */ }
-  return { project: newProject(), note: "Your last session couldn't be reopened, so a fresh project was started. The old copy is saved in this browser under takui:v1:recovered." };
+  return { project: newProject(), note: `Your last session couldn't be reopened, so a fresh project was started. The old copy is saved in this browser under ${STORAGE_KEY}:recovered.` };
 }
 
 /** Drafts come from parsed JSON (plain data), but copy anyway so the store never shares references with a preview */

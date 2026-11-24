@@ -1,4 +1,8 @@
-# Builds the static site and deploys it to GitHub Pages on every push to main (PLAN.md D6).
+# Builds the static site and deploys it to GitHub Pages (PLAN.md D6). One Pages site holds both:
+#   <site>/      the live builder, from main
+#   <site>/dev/  the dev preview, from the dev branch (own autosave key, "DEV PREVIEW" tag)
+# Runs on pushes to main, and after "Dev branch check" passes on dev: workflow_run always runs
+# from main, so the github-pages environment's default "main only" rule still holds.
 # Only typecheck + build run here: the emitter tests need aapt2/android.jar, dotnet and javac
 # from local SDKs that the runner doesn't have, so run `npm test` locally before pushing.
 name: Deploy to GitHub Pages
@@ -6,6 +10,10 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  workflow_run:
+    workflows: [Dev branch check]
+    types: [completed]
+    branches: [dev]
   workflow_dispatch:
 
 permissions:
@@ -15,22 +23,39 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: live
+      - id: dev
+        uses: actions/checkout@v4
+        continue-on-error: true   # no dev branch yet: deploy live only
+        with:
+          ref: dev
+          path: dev
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run build
+      - name: Build live (main)
+        working-directory: live
+        run: npm ci && npm run build
+      - name: Build dev preview into /dev/
+        if: steps.dev.outcome == 'success'
+        working-directory: dev
+        run: |
+          npm ci
+          VITE_CHANNEL=dev npm run build
+          cp -r dist ../live/dist/dev
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: live/dist
 
   deploy:
     needs: build

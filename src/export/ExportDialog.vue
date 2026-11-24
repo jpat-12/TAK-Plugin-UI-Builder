@@ -7,6 +7,9 @@ import { computed, nextTick, ref } from 'vue';
 import { toBlob } from 'html-to-image';
 import { useProject } from '../store/project';
 import { FRAMES, SKINNED } from '../skins/frames';
+import { themeVars } from '../skins/theme';
+import { bannerFor } from '../skins/banner';
+import BannerView from '../skins/BannerView.vue';
 import { frameKeyFor } from '../canvas/view';
 import { TARGET_NAMES } from '../spec/validate';
 import type { Screen, Target } from '../spec/types';
@@ -161,7 +164,7 @@ function goToProblems() {
           </div>
           <p v-if="busy" class="busy">{{ busy }}</p>
           <p v-else-if="done" class="done">{{ done }}</p>
-          <p class="muted">The zip holds <code>HANDOFF.md</code>, <code>ui-spec.json</code>, <code>PROMPT.md</code>, <code>mockups/</code> and <code>scaffold/</code>.</p>
+          <p class="muted">The zip holds <code>HANDOFF.md</code>, <code>ui-spec.json</code>, <code>PROMPT.md</code>, <code>mockups/</code><template v-if="p.entry.iconImage">, <code>assets/icon.png</code></template> and <code>scaffold/</code>.</p>
         </section>
 
         <section class="right">
@@ -173,11 +176,12 @@ function goToProblems() {
 
     <!-- off-screen mockup stage: one screen, one platform, no editor chrome -->
     <div v-if="job" class="stage-wrap" aria-hidden="true">
-      <div ref="stage" class="mock skin" :class="['skin-' + job.target, job.screen.surface]" :style="{ width: paneWidth(job.target) + 'px' }">
+      <div ref="stage" class="mock skin" :class="['skin-' + job.target, job.screen.surface]" :style="{ width: paneWidth(job.target) + 'px', ...themeVars(p.theme) }">
         <div :class="job.screen.surface === 'dialog' ? 'd-title' : 'p-title'">
           <span>{{ job.screen.surface === 'settings' && job.target === 'atak' ? `Settings › ${job.screen.title}` : job.screen.title }}</span>
           <span v-if="job.screen.surface !== 'dialog'" class="mx">✕</span>
         </div>
+        <BannerView v-if="bannerFor(p, job.screen)" :look="bannerFor(p, job.screen)!" />
         <div class="mbody"><CanvasNode :node="job.screen.root" :ctx="{ project: p }" is-root ghost mockup :target="job.target" :tab="job.tab" /></div>
         <div v-if="job.screen.surface === 'dialog'" class="d-buttons">
           <template v-if="job.target === 'atak'"><span>CANCEL</span><span>OK</span></template>

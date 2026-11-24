@@ -91,5 +91,5 @@
 .skin .c-collapse-head { display: flex; justify-content: space-between; padding: 8px; background: var(--k-head); font-weight: 600; }
 
 /* frame pieces (pane title bar, dialog) */
-.skin .p-title, .skin .d-title { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--k-titlebar); border-bottom: 1px solid var(--k-title-line); font-weight: 600; font-size: 1.07em; }
+.skin .p-title, .skin .d-title { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--k-titlebar); color: var(--k-title-fg, inherit); border-bottom: 1px solid var(--k-title-line); font-weight: 600; font-size: 1.07em; }
 .skin .d-buttons { display: flex; justify-content: flex-end; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--k-line); }
