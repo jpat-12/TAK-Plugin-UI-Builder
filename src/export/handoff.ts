@@ -5,7 +5,8 @@
 
 import { componentSpec, type ComponentSpec } from '../spec/catalog';
 import { walkWithAncestors, resolveKey } from '../spec/tree';
-import { SPEC_VERSION, type Action, type Node, type Project, type StateField, type Target } from '../spec/types';
+import { textOn } from '../spec/color';
+import { ICON_SIZE, SPEC_VERSION, type Theme, type Action, type Node, type Project, type StateField, type Target } from '../spec/types';
 import { TARGET_NAMES } from '../spec/validate';
 import { PLATFORM_GUIDES } from './platforms';
 
@@ -40,7 +41,8 @@ export function buildHandoff(p: Project, opts: HandoffOptions): string {
   line('|---|---|');
   line(`| Package id | ${code(p.meta.packageId)} |`);
   line(`| Build for | ${targetList} |`);
-  line(`| Launch button | "${esc(p.entry.label)}"${p.entry.icon ? ` (icon idea: ${esc(p.entry.icon)})` : ''} → opens ${code(p.entry.openScreen)} |`);
+  const iconWords = p.entry.iconImage ? ` (icon: ${code(ICON_FILE)}${p.entry.icon ? `, ${esc(p.entry.icon)}` : ''})` : p.entry.icon ? ` (icon idea: ${esc(p.entry.icon)})` : '';
+  line(`| Launch button | "${esc(p.entry.label)}"${iconWords} → opens ${code(p.entry.openScreen)} |`);
   line(`| Screens | ${p.screens.length} · Data fields ${p.state.length} · Actions ${p.actions.length} |`);
   line();
 
@@ -81,6 +83,8 @@ export function buildHandoff(p: Project, opts: HandoffOptions): string {
   }
 
   // ---- platforms ----
+  lookSection(p, line);
+
   line('## Platforms');
   line();
   for (const t of targets) {
@@ -160,6 +164,13 @@ export function buildHandoff(p: Project, opts: HandoffOptions): string {
 }
 
 /** Prompt for Claude Code. 'zip' points at the unzipped folder; 'inline' embeds everything. */
+/** The spec minus the uploaded icon's base64 (too big to paste; the zip carries the PNG) */
+function withoutIconImage(p: Project): Project {
+  if (!p.entry.iconImage) return p;
+  const { iconImage: _drop, ...entry } = p.entry;
+  return { ...p, entry };
+}
+
 export function buildPrompt(p: Project, mode: 'zip' | 'inline', handoffMd = ''): string {
   const targets = p.meta.targets.map((t) => TARGET_NAMES[t]).join(', ');
   const head = `Build the TAK plugin "${p.meta.name}" (${p.meta.packageId}) for ${targets}.`;
@@ -178,18 +189,50 @@ export function buildPrompt(p: Project, mode: 'zip' | 'inline', handoffMd = ''):
     '',
     'Below are the design handoff (HANDOFF.md) and the machine-readable spec (ui-spec.json). Save both into the project as docs/HANDOFF.md and docs/ui-spec.json, summarize your plan per platform and list any questions about unclear actions before writing code, then implement and finish with the acceptance checklist.',
     '',
+    ...(p.entry.iconImage ? [`The launch icon image (${ICON_FILE}) is too big to paste here. Ask me for it before you wire up the launch button; it comes in the builder's zip export.`, ''] : []),
     '<HANDOFF.md>',
     handoffMd.trim(),
     '</HANDOFF.md>',
     '',
     '<ui-spec.json>',
-    JSON.stringify(p, null, 2),
+    JSON.stringify(withoutIconImage(p), null, 2),
     '</ui-spec.json>',
     '',
   ].join('\n');
 }
 
 // ---------------------------------------------------------------- helpers
+
+/** Where an uploaded launch icon lands in the handoff zip */
+export const ICON_FILE = 'assets/icon.png';
+
+const THEME_ROLES: { key: keyof Theme; name: string; where: string }[] = [
+  { key: 'accent', name: 'Highlight', where: 'section headings, the selected tab, input underlines/focus, checkboxes, toggles, sliders, progress bars' },
+  { key: 'primary', name: 'Main buttons', where: 'fill of buttons whose style is "primary"' },
+  { key: 'header', name: 'Title bar', where: 'background of each screen\'s title bar, where the platform lets the plugin color it' },
+];
+
+/** "Look and feel": the custom icon + colors, only when the designer set any */
+function lookSection(p: Project, line: (s?: string) => void) {
+  const t = p.theme ?? {};
+  const roles = THEME_ROLES.filter((r) => t[r.key]);
+  if (!p.entry.iconImage && !roles.length) return;
+  line('## Look and feel');
+  line();
+  if (p.entry.iconImage) {
+    line(`- **Launch icon:** \`${ICON_FILE}\` (${ICON_SIZE}×${ICON_SIZE} PNG, transparent background; also in \`ui-spec.json\` as \`entry.iconImage\`). Use it for the toolbar / menu / ribbon button on every platform, scaled to that platform's icon sizes. Don't substitute a stock icon.`);
+  }
+  if (roles.length) {
+    line('- **Custom colors.** Use these instead of the platform\'s default accent everywhere listed. Anything not listed keeps the platform\'s own colors. Text on a colored fill uses the given text color so it stays readable.');
+    line();
+    line('| Role | Color | Text on it | Used for |');
+    line('|---|---|---|---|');
+    for (const r of roles) line(`| ${r.name} | \`${t[r.key]}\` | ${r.key === 'accent' ? 'n/a' : `\`${textOn(t[r.key]!)}\``} | ${r.where} |`);
+    line();
+    line('Define them once per platform (Android `res/values/colors.xml`, a WPF `ResourceDictionary`, CSS custom properties for CloudTAK/WebTAK, one Java `Color` constants class for TAKX) and reference them; don\'t repeat hex values in layouts.');
+  }
+  line();
+}
 
 function typeWords(f: StateField): string {
   switch (f.type) {

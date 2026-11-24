@@ -4,7 +4,7 @@
   --k-font: 14px/1.45 Inter, -apple-system, 'Segoe UI', system-ui, sans-serif;
   --k-bg: #151f2c; --k-bg2: #1d273b; --k-fg: #f8fafc; --k-fg2: #9ba9be; --k-line: #2b3a55; --k-placeholder: #5f6f87;
   --k-accent: #4299e1; --k-radius: 4px; --k-caps: none;
-  --k-btn: #1d273b; --k-btn-border: #34445f; --k-primary: #206bc4; --k-primary-border: #206bc4; --k-primary-fg: #fff;
+  --k-btn: #1d273b; --k-btn-border: #34445f; --k-primary: #206bc4; --k-primary-border: var(--k-primary); --k-primary-fg: #fff;
   --k-danger: #d63939; --k-track: #2b3a55; --k-th: #9ba9be;
   --k-tabbar: #151f2c; --k-head: #1d273b; --k-titlebar: #1d273b; --k-title-line: #2b3a55;
 }

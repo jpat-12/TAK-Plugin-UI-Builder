@@ -8,6 +8,7 @@
 // where, not "invalid reference at $.screens[0]...".
 
 import { componentSpec, type PropSpec } from './catalog';
+import { contrast, PLATFORM_BG, UI_CONTRAST } from './color';
 import { type Node, type Project, type StateField, type Target } from './types';
 
 export interface Issue {
@@ -81,6 +82,15 @@ export function validateProject(p: Project): Issue[] {
 
   // ---- entry ----
   if (!screenIds.has(p.entry.openScreen)) err('/entry', `The plugin's launch button opens "${p.entry.openScreen}", which isn't a screen.`);
+  // base64 is 4/3 of the bytes; a launch icon over ~100 KB bloats every project file and the APK
+  if (p.entry.iconImage && p.entry.iconImage.length > 140_000) warn('/entry/iconImage', 'The launch icon image is large (over 100 KB). A simpler picture with fewer colors keeps the plugin small.');
+
+  // ---- theme: a highlight color that disappears into the dark panel helps nobody ----
+  if (p.theme?.accent) {
+    const accent = p.theme.accent;
+    const faint = p.meta.targets.filter((t) => contrast(accent, PLATFORM_BG[t]) < UI_CONTRAST);
+    if (faint.length) warn('/theme/accent', `The highlight color ${accent} is hard to see on the dark background of ${faint.map((t) => TARGET_NAMES[t]).join(', ')}. Try a lighter or brighter color.`);
+  }
 
   // ---- node tree ----
   const nodeIds = new Set<string>();

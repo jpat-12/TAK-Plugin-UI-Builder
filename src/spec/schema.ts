@@ -13,7 +13,7 @@ import { z } from 'zod';
 import {
   ACTION_KINDS, CONTAINER_TYPES, SPEC_VERSION, STATE_TYPES, SURFACES, TARGETS,
   type Action, type ContainerNode, type HandoffSettings, type ElementNode, type Entry, type Node, type Project,
-  type ProjectMeta, type Screen, type StateField, type TargetOverrides, type VisibleWhen,
+  type ProjectMeta, type Screen, type Theme, type StateField, type TargetOverrides, type VisibleWhen,
 } from './types';
 
 /** Code-safe identifier: emitters turn these into Java/C#/TS names */
@@ -24,6 +24,7 @@ const id = z.string().regex(/^[a-zA-Z][a-zA-Z0-9_-]*$/, 'must start with a lette
 const target = z.enum(TARGETS);
 const propValue = z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]);
 const props = z.record(propValue);
+const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a #RRGGBB hex color');
 
 const metaSchema: z.ZodType<ProjectMeta> = z.object({
   name: z.string(),
@@ -43,7 +44,7 @@ const stateFieldSchema: z.ZodType<StateField> = z.lazy(() => z.object({
   options: z.array(z.object({
     value: z.string().min(1),
     label: z.string(),
-    color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a #RRGGBB hex color').optional(),
+    color: hex.optional(),
   }).strict()).optional(),
   itemFields: z.array(stateFieldSchema).optional(),
   default: z.union([z.string(), z.number(), z.boolean(), z.null()]).optional(),
@@ -61,7 +62,14 @@ const actionSchema: z.ZodType<Action> = z.object({
 const entrySchema: z.ZodType<Entry> = z.object({
   label: z.string(),
   icon: z.string().optional(),
+  iconImage: z.string().regex(/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/, 'must be a PNG image (base64 data: URL)').optional(),
   openScreen: id,
+}).strict();
+
+const themeSchema: z.ZodType<Theme> = z.object({
+  accent: hex.optional(),
+  primary: hex.optional(),
+  header: hex.optional(),
 }).strict();
 
 const visibleWhenSchema: z.ZodType<VisibleWhen> = z.object({
@@ -116,6 +124,7 @@ export const projectSchema: z.ZodType<Project> = z.object({
   state: z.array(stateFieldSchema),
   actions: z.array(actionSchema),
   entry: entrySchema,
+  theme: themeSchema.optional(),
   screens: z.array(screenSchema).min(1, 'a plugin needs at least one screen'),
   handoff: handoffSchema.optional(),
 }).strict();

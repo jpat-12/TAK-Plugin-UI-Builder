@@ -20,6 +20,8 @@ export interface Project {
   state: StateField[];
   actions: Action[];
   entry: Entry;
+  /** The plugin's own colors, used across every screen. Optional: unset = each platform's default. */
+  theme?: Theme;
   screens: Screen[];
   /** Extra guidance carried into HANDOFF.md (PLAN.md Phase 2). Optional. */
   handoff?: HandoffSettings;
@@ -106,8 +108,25 @@ export interface Entry {
   label: string;
   /** Free-text icon hint for the agent / iconset ("ambulance", "clipboard") */
   icon?: string;
+  /** Uploaded launch icon: a square PNG as a base64 data: URL (the builder resizes uploads to
+   *  ICON_SIZE). Ships in the handoff as assets/icon.png. */
+  iconImage?: string;
   /** Screen opened by the entry point */
   openScreen: string;
+}
+
+/** Pixel size the builder resizes uploaded launch icons to (square) */
+export const ICON_SIZE = 192;
+
+// ---- Theme: custom colors. Each is a #RRGGBB hex; text on top of them is picked for contrast. ----
+
+export interface Theme {
+  /** Highlights: section headings, active tab, input underline, toggles, sliders, progress */
+  accent?: string;
+  /** Fill of primary ("main action") buttons */
+  primary?: string;
+  /** Background of the screen's title bar */
+  header?: string;
 }
 
 // ---- Screens + node tree ----

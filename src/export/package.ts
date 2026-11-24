@@ -5,7 +5,7 @@ import JSZip from 'jszip';
 import { walk } from '../spec/tree';
 import type { Project, Screen, Target } from '../spec/types';
 import { emitScaffold } from '../emit';
-import { buildHandoff, buildPrompt, type MockupRef } from './handoff';
+import { buildHandoff, buildPrompt, ICON_FILE, type MockupRef } from './handoff';
 
 /** tab: index into the screen's first tabs block (tabbed screens get one image per tab) */
 export interface RenderedMockup { target: Target; screen: string; png: Uint8Array; tab?: number; label?: string }
@@ -26,9 +26,15 @@ export function handoffFiles(p: Project, generatedAt: string, mockups: RenderedM
     'ui-spec.json': JSON.stringify(p, null, 2) + '\n',
     'PROMPT.md': buildPrompt(p, 'zip'),
   };
+  if (p.entry.iconImage) files[ICON_FILE] = dataUrlBytes(p.entry.iconImage);
   for (const m of mockups) files[mockupPath(m.target, m.screen, m.tab)] = m.png;
   for (const [t, fm] of Object.entries(scaffold)) for (const [path, body] of Object.entries(fm ?? {})) files[`scaffold/${t}/${path}`] = body;
   return files;
+}
+
+function dataUrlBytes(url: string): Uint8Array {
+  const bin = atob(url.slice(url.indexOf(',') + 1));
+  return Uint8Array.from(bin, (c) => c.charCodeAt(0));
 }
 
 export async function buildZip(p: Project, generatedAt: string, mockups: RenderedMockup[], withScaffold = true): Promise<Blob> {

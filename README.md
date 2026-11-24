@@ -25,6 +25,10 @@ your own Claude API key, entered in the browser and never sent anywhere but the 
 > The "Build plugin" button is still deferred by decision. **New here?** Click **Tour**, or read
 > [docs/WALKTHROUGH.md](docs/WALKTHROUGH.md).
 >
+> **2026-11-24 (branch, in progress):** your own launch icon (upload a picture; it ships as `assets/icon.png`) and
+> custom plugin colors (presets, colors picked from your icon, contrast checks) shown in every preview and mockup
+> and handed to the agent in HANDOFF.md. Generated code doesn't apply them yet.
+>
 > **2026-11-23:** grid, alert banner, stat tile, timer and loading components plus a `notify` action,
 > from a survey of 44 real TAK plugins on GitHub ([docs/PLUGIN_SURVEY.md](docs/PLUGIN_SURVEY.md)), and a
 > Mass Casualty Triage template that uses them all.
@@ -162,6 +166,7 @@ Each node may have `bind` (a data field, or `$item.<field>` inside a list), `on`
 | Describe a screen → Claude draft (preview, insert as screen or at selection, one undo) | Phase 4 | ✅ Working (request/repair tested; live call verified to reach the API, not yet run with a real key) |
 | TAKX: preview skin + Swing code generator (from the 5.8.0 SDK) | Phase 5 | ✅ Working (javac-verified against the documented API; not yet built against a real TAKX install) |
 | Survey-driven components: grid, alert, stat, timer, loading; `notify` action | added 2026-11-23 ([survey](docs/PLUGIN_SURVEY.md)) | ✅ Working, compiled on all five platforms via the triage template |
+| Launch icon upload + custom colors (presets, from-icon, contrast check) in previews, mockups, HANDOFF.md | added 2026-11-24 | 🟡 Designer + handoff working; emitters don't apply them yet |
 | Map-item menu entries, map banners, pill groups, search box, split view | [survey](docs/PLUGIN_SURVEY.md) "Next" | ⬜ Ranked, not started |
 | "Build plugin" button | Phase 5 | ⬜ Deferred by decision |
 

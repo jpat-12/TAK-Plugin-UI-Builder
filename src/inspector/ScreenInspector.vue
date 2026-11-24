@@ -5,6 +5,7 @@ import { SURFACES, TARGETS, type Surface } from '../spec/types';
 import { TARGET_NAMES } from '../spec/validate';
 import { useProject } from '../store/project';
 import CommitField from './CommitField.vue';
+import LookEditor from './LookEditor.vue';
 
 const store = useProject();
 const s = computed(() => store.screen);
@@ -51,10 +52,7 @@ const commitVersion = (v: string) => /^\d+\.\d+\.\d+$/.test(v) && (store.updateM
       <span v-for="w in meta.spellingAllow" :key="w" class="w">{{ w }}<button title="Remove" @click="store.updateMeta({ spellingAllow: meta.spellingAllow!.filter((x) => x !== w) })">✕</button></span>
     </div>
 
-    <h3>Launch button</h3>
-    <div class="row"><span class="l">Label</span><input :value="store.project.entry.label" @input="store.updateEntry({ label: ($event.target as HTMLInputElement).value })" /></div>
-    <div class="row"><span class="l">Icon idea</span><input :value="store.project.entry.icon ?? ''" placeholder="e.g. ambulance, clipboard" @input="store.updateEntry({ icon: ($event.target as HTMLInputElement).value || undefined })" /></div>
-    <p class="muted">On ATAK this is the toolbar tool. CloudTAK puts it in the home menu, WinTAK in the ribbon, and TAKX on its toolbar.</p>
+    <LookEditor />
   </div>
 </template>
 

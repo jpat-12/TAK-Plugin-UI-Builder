@@ -6,7 +6,7 @@
   --k-accent: #3399ff; --k-radius: 2px; --k-caps: none;
   --k-btn: #3e3e42; --k-btn-border: #55555c; --k-primary: #007acc; --k-primary-border: #1c97ea; --k-primary-fg: #fff;
   --k-danger: #b52a2a; --k-track: #55555c; --k-th: #f1f1f1;
-  --k-tabbar: #252528; --k-head: #3a3a3f; --k-titlebar: #3f3f46; --k-title-line: #007acc;
+  --k-tabbar: #252528; --k-head: #3a3a3f; --k-titlebar: #3f3f46; --k-title-line: var(--k-primary);
 }
 .skin-wintak .k-edit, .skin-wintak .k-spinner { border: 1px solid #5a5a62; background: #1e1e20; padding: 3px 8px; min-height: 28px; }
 .skin-wintak .k-edit.area { border-bottom-width: 1px; }

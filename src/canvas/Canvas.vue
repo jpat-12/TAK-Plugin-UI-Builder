@@ -3,6 +3,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
 import { useProject } from '../store/project';
 import { FRAMES, SKINNED } from '../skins/frames';
+import { themeVars } from '../skins/theme';
 import { TARGET_NAMES } from '../spec/validate';
 import type { Target } from '../spec/types';
 import { frameChoice, frameKeyFor, previewTarget } from './view';
@@ -40,6 +41,8 @@ const scale = computed(() => Math.min(1, (stageWidth.value - 24) / frame.value.w
 
 const ctx = computed(() => ({ project: store.project }));
 const s = computed(() => store.screen);
+const colors = computed(() => themeVars(store.project.theme));
+const entry = computed(() => store.project.entry);
 const top = computed(() => (frame.value.chrome === 'window' ? 30 : 0) + (frame.value.topbar ?? 0));
 </script>
 
@@ -73,12 +76,19 @@ const top = computed(() => (frame.value.chrome === 'window' ? 30 : 0) + (frame.v
         <div class="device" :class="frame.chrome" :style="{ width: frame.w + 'px', height: frame.h + 'px', transform: `scale(${scale})` }">
           <div v-if="frame.chrome === 'window'" class="winbar"><i /><i /><i /><span>{{ frame.host }}</span></div>
           <div v-if="frame.topbar" class="hostbar" :class="target" :style="{ top: (frame.chrome === 'window' ? 30 : 0) + 'px', height: frame.topbar + 'px' }">
-            <span v-for="n in 6" :key="n" />
+            <span class="launch" :title="`${entry.label} (your plugin's launch button)`">
+              <img v-if="entry.iconImage" :src="entry.iconImage" alt="" /><b v-else>{{ (entry.label || '?').slice(0, 1) }}</b>
+            </span>
+            <span v-for="n in 5" :key="n" />
           </div>
-          <div class="map" :class="target" :style="{ top: top + 'px' }"><span>{{ target === 'takx' ? 'globe' : 'map' }}</span></div>
+          <div class="map" :class="target" :style="{ top: top + 'px' }"><span>{{ target === 'takx' ? 'globe' : 'map' }}</span>
+            <div v-if="!frame.topbar" class="maptools" :title="`${entry.label} (your plugin's launch button)`">
+              <div class="launch"><img v-if="entry.iconImage" :src="entry.iconImage" alt="" /><b v-else>{{ (entry.label || '?').slice(0, 1) }}</b></div>
+            </div>
+          </div>
 
           <div v-if="s.surface === 'dialog'" class="dialog-wrap" :style="{ top: top + 'px' }">
-            <div class="dialog skin" :class="'skin-' + target" :style="{ width: Math.min(frame.pane, 460) + 'px' }">
+            <div class="dialog skin" :class="'skin-' + target" :style="{ width: Math.min(frame.pane, 460) + 'px', ...colors }">
               <div class="d-title">{{ s.title }}</div>
               <div class="scroll"><CanvasNode :node="s.root" :ctx="ctx" is-root /></div>
               <div class="d-buttons">
@@ -89,7 +99,7 @@ const top = computed(() => (frame.value.chrome === 'window' ? 30 : 0) + (frame.v
           </div>
 
           <div v-else class="pane skin" data-tour="pane" :class="['skin-' + target, frame.dock]"
-            :style="{ width: frame.pane + 'px', top: frame.dock === 'float' ? top + 24 + 'px' : top + 'px' }">
+            :style="{ width: frame.pane + 'px', top: frame.dock === 'float' ? top + 24 + 'px' : top + 'px', ...colors }">
             <div class="p-title">
               <span>{{ s.surface === 'settings' ? (target === 'atak' ? `Settings › ${s.title}` : `${s.title} (settings)`) : s.title }}</span>
               <span class="x">✕</span>
@@ -130,6 +140,11 @@ const top = computed(() => (frame.value.chrome === 'window' ? 30 : 0) + (frame.v
 .winbar span { color: #aaa; font: 12px system-ui; margin-left: 10px; }
 .hostbar { position: absolute; left: 0; right: 0; background: #3c3c42; display: flex; gap: 10px; align-items: center; padding: 0 14px; }
 .hostbar span { width: 46px; height: 60%; background: rgba(255,255,255,.09); border-radius: 3px; }
+.launch { display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.16) !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+.launch img { max-width: 80%; max-height: 80%; }
+.launch b { color: #eee; font: 600 15px system-ui; }
+.maptools { position: absolute; top: 12px; left: 12px; display: flex; gap: 6px; }
+.maptools .launch { width: 44px; height: 44px; border-radius: 6px; background: rgba(0,0,0,.55) !important; }
 .hostbar.webtak { background: #1f2327; }
 .hostbar.takx { background: #262626; border-bottom: 1px solid #3a3a3a; }
 .hostbar.takx span { width: 58px; height: 64%; }
@@ -138,7 +153,7 @@ const top = computed(() => (frame.value.chrome === 'window' ? 30 : 0) + (frame.v
 .map { position: absolute; inset: 0; background-color: #4a5a43;
   background-image: repeating-linear-gradient(0deg, transparent 0 59px, rgba(255,255,255,.08) 59px 60px),
     repeating-linear-gradient(90deg, transparent 0 59px, rgba(255,255,255,.08) 59px 60px); }
-.map span { position: absolute; left: 16px; bottom: 12px; color: rgba(255,255,255,.4); font: 12px system-ui; }
+.map > span { position: absolute; left: 16px; bottom: 12px; color: rgba(255,255,255,.4); font: 12px system-ui; }
 .pane { position: absolute; bottom: 0; display: flex; flex-direction: column; }
 .pane.right { right: 0; box-shadow: -4px 0 12px rgba(0,0,0,.5); }
 .pane.float { left: 24px; bottom: auto; max-height: calc(100% - 120px); border-radius: 8px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,.6); }

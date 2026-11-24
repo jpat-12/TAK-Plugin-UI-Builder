@@ -190,6 +190,10 @@
             "icon": {
               "type": "string"
             },
+            "iconImage": {
+              "type": "string",
+              "pattern": "^data:image\\/png;base64,[A-Za-z0-9+/]+={0,2}$"
+            },
             "openScreen": {
               "$ref": "#/definitions/TakUiProject/properties/actions/items/properties/id"
             }
@@ -198,6 +202,21 @@
             "label",
             "openScreen"
           ],
+          "additionalProperties": false
+        },
+        "theme": {
+          "type": "object",
+          "properties": {
+            "accent": {
+              "$ref": "#/definitions/TakUiProject/properties/state/items/properties/options/items/properties/color"
+            },
+            "primary": {
+              "$ref": "#/definitions/TakUiProject/properties/state/items/properties/options/items/properties/color"
+            },
+            "header": {
+              "$ref": "#/definitions/TakUiProject/properties/state/items/properties/options/items/properties/color"
+            }
+          },
           "additionalProperties": false
         },
         "screens": {

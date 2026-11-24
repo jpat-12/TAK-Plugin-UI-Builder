@@ -8,7 +8,7 @@ import { cloneWithNewIds, createNode, newProject, uniqueId } from '../spec/facto
 import { loadProject } from '../spec/load';
 import { projectSchema } from '../spec/schema';
 import { allNodeIds, contains, fieldAt, locate, resolveKey, walk, walkWithAncestors } from '../spec/tree';
-import type { Action, ContainerType, Node, Project, PropValue, Screen, StateField, Surface, Target, VisibleWhen } from '../spec/types';
+import type { Action, ContainerType, Node, Project, PropValue, Screen, StateField, Surface, Target, Theme, VisibleWhen } from '../spec/types';
 
 const IDENT = /^[a-zA-Z][a-zA-Z0-9_]*$/;
 import { validateProject, type Issue } from '../spec/validate';
@@ -316,7 +316,14 @@ export const useProject = defineStore('project', () => {
     mutate((p) => { p.meta.targets = has ? p.meta.targets.filter((x) => x !== t) : [...p.meta.targets, t]; });
   }
   const updateEntry = (patch: Partial<Project['entry']>) =>
-    mutate((p) => { Object.assign(p.entry, patch); }, `entry:${Object.keys(patch).join()}`);
+    mutate((p) => { Object.assign(p.entry, patch); dropUndefined(p.entry); }, `entry:${Object.keys(patch).join()}`);
+  /** Set or clear (undefined) custom colors; an empty theme is removed so the file stays clean */
+  const updateTheme = (patch: Theme) =>
+    mutate((p) => {
+      const t: Theme = { ...p.theme, ...patch };
+      dropUndefined(t);
+      if (Object.keys(t).length) p.theme = t; else delete p.theme;
+    }, `theme:${Object.keys(patch).join()}`);
 
   // ---- data fields ----
   // Fields are addressed by key path: ['incidents'] is top-level, ['incidents', 'priority'] is
@@ -517,12 +524,17 @@ export const useProject = defineStore('project', () => {
     addNode, insertionPoint, canMove, moveNode, removeNode, duplicateNode, nudge, canIndent, indent, canOutdent, outdent,
     setProp, setBind, setEvent, setVisibleWhen, setHiddenOn, setContainerType, renameNode, addTab,
     addScreen, removeScreen, updateScreen, renameScreen,
-    updateMeta, toggleTarget, updateEntry,
+    updateMeta, toggleTarget, updateEntry, updateTheme,
     addState, updateState, renameStateKey, removeState,
     updateFieldAt, renameFieldAt, renameOptionAt, addItemFieldAt, removeFieldAt,
     addAction, updateAction, renameAction, removeAction,
   };
 });
+
+/** Optional fields are absent, never `undefined` (keeps saved JSON and snapshots stable) */
+function dropUndefined(o: object) {
+  for (const [k, v] of Object.entries(o)) if (v === undefined) delete (o as Record<string, unknown>)[k];
+}
 
 function restore(): { project: Project; note: string } {
   let raw: string | null = null;
