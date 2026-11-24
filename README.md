@@ -9,7 +9,8 @@ using the existing per-platform templates.
 Built for public-safety people and vibecoders as much as for developers.
 
 **Use it online:** https://jpat-12.github.io/TAK-Plugin-UI-Builder/ (deployed from `main` by
-`.github/workflows/pages.yml`). Your designs autosave in your own browser; ✨ Describe… uses
+`.github/workflows/pages.yml`). **Dev preview** of upcoming features: https://jpat-12.github.io/TAK-Plugin-UI-Builder/dev/
+(built from the `dev` branch; it keeps its own autosave, so trying it never changes your live project). Your designs autosave in your own browser; ✨ Describe… uses
 your own Claude API key, entered in the browser and never sent anywhere but the API.
 
 > **Status (2026-11-10): Phases 0–4 done.** You can describe, design, generate and hand off a plugin:

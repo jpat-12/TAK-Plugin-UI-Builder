@@ -1,0 +1,23 @@
+# Runs on every push to the dev branch. When it passes, "Deploy to GitHub Pages" (which runs
+# from main, the only branch allowed to deploy) rebuilds the site with dev's code at /dev/.
+name: Dev branch check
+
+on:
+  push:
+    branches: [dev]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: VITE_CHANNEL=dev npm run build

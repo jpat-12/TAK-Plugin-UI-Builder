@@ -157,3 +157,16 @@ describe('store mutations', () => {
     expect(s.insertionPoint()).toEqual({ parentId: 'main-root', index: 6 });
   });
 });
+
+describe('autosave keys (live vs dev preview)', () => {
+  it('live keeps the original key, so existing autosaves still open; dev has its own', async () => {
+    const { storageKeyFor } = await import('../src/app/channel');
+    expect(storageKeyFor('live')).toBe('takui:v1');
+    expect(storageKeyFor('dev')).not.toBe(storageKeyFor('live'));
+  });
+  it('a project saved by the previous version (no colors, icon or banner) loads unchanged', () => {
+    const before = JSON.parse(readFileSync('test/fixtures/event-cad.takui.json', 'utf8'));
+    const r = loadProject(JSON.stringify(before));
+    expect(r.ok && JSON.parse(JSON.stringify(r.project))).toEqual(before);
+  });
+});

@@ -16,9 +16,11 @@ import type { DraftResult } from '../ai/draft';
 import { dictionary } from '../spell/dictionary';
 import { collectText, setText } from '../spell/text';
 import { findMisspellings, replaceWord, type Misspelling } from '../spell/words';
+import { CHANNEL, storageKeyFor } from '../app/channel';
 
-/** Versioned key: on a breaking spec change, bump instead of migrating stale browser copies */
-export const STORAGE_KEY = 'takui:v1';
+/** Versioned key: on a breaking spec change, bump instead of migrating stale browser copies.
+ *  The dev preview uses its own key (app/channel.ts) so it never touches live autosaves. */
+export const STORAGE_KEY = storageKeyFor(CHANNEL);
 const UNDO_LIMIT = 100;
 /** Edits with the same coalesce key inside this window share one undo step (typing) */
 const COALESCE_MS = 1000;
@@ -546,12 +548,18 @@ function dropUndefined(o: object) {
 
 function restore(): { project: Project; note: string } {
   let raw: string | null = null;
+  let note = '';
   try { raw = localStorage.getItem(STORAGE_KEY); } catch { /* storage blocked: start fresh */ }
+  // first visit to the dev preview: start from a COPY of the live autosave (read only, never written back)
+  if (!raw && CHANNEL === 'dev') {
+    try { raw = localStorage.getItem(storageKeyFor('live')); } catch { /* blocked */ }
+    if (raw) note = 'This is the dev preview. It opened a copy of your project from the live site; changes here stay in the dev preview and never change the live one.';
+  }
   if (!raw) return { project: newProject(), note: '' };
   const r = loadProject(raw);
-  if (r.ok) return { project: r.project, note: '' };
+  if (r.ok) return { project: r.project, note };
   try { localStorage.setItem(`${STORAGE_KEY}:recovered`, raw); } catch { /* best effort */ }
-  return { project: newProject(), note: "Your last session couldn't be reopened, so a fresh project was started. The old copy is saved in this browser under takui:v1:recovered." };
+  return { project: newProject(), note: `Your last session couldn't be reopened, so a fresh project was started. The old copy is saved in this browser under ${STORAGE_KEY}:recovered.` };
 }
 
 /** Drafts come from parsed JSON (plain data), but copy anyway so the store never shares references with a preview */
