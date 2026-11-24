@@ -56,6 +56,7 @@ Requires Node 20+.
 ## Files
 
 ```
+LICENSE                       MIT (generated output is the user's; see License below)
 PLAN.md                       the plan: phases, decisions (D1–D8), open defaults
 schema/takui-v1.schema.json   GENERATED JSON Schema of the spec (committed for agents; test checks drift)
 src/
@@ -212,3 +213,12 @@ Each node may have `bind` (a data field, or `$item.<field>` inside a list), `on`
   fails on any error, warning or typo, so a new user never starts from a red screen.
 - **No zod `.default()`.** Defaults belong to the loader, so input and output types stay
   identical.
+
+## License
+
+[MIT](LICENSE). Use, fork and ship it, including in closed-source and government work.
+
+**What the builder generates belongs to you.** Exported code, specs, mockups and handoff files
+(everything from Export for agent…, the Code tab and Save file) are yours to use under any license,
+with no attribution required. The MIT notice covers the builder's own source, not the plugins you
+make with it.
