@@ -21,7 +21,7 @@ export interface Frame {
   /** turn the size preset sideways (phones are portrait in SIZES) */
   landscape?: boolean;
   /** device areas the app can't draw in, px: status bar (top), camera cutout band (left, landscape
-   *  phones), gesture strip (bottom). Half/full panes are measured from the width that's left. */
+   *  phones), gesture strip (bottom). A full pane fills the width that's left; a half pane is half the screen. */
   inset?: { top: number; left: number; bottom: number };
   /** height of ATAK's toolbar row: panes open below it, flush right */
   toolbar?: number;
@@ -66,8 +66,8 @@ export const SKINNED: readonly Target[] = ['atak', 'cloudtak', 'wintak', 'webtak
 
 // ATAK insets and toolbar height are measured from ATAK 5.6 on a Pixel 7a (2400x1080 at 420 dpi,
 // i.e. 914x411 dp): 28 dp status bar, 45 dp cutout band in landscape, 24 dp gesture strip, 50 dp
-// toolbar row. A half pane is half of the map area, not of the whole screen. Tablets get the
-// status bar only (their nav lives in the taskbar).
+// toolbar row. A half pane is half of the whole screen (Jon's call, 2026-11-25), so on a landscape
+// phone it also covers half of what the cutout band leaves. Tablets get the status bar only.
 const ATAK_TABLET = { inset: { top: 24, left: 0, bottom: 0 }, toolbar: 48 };
 export const FRAMES: Record<string, Record<string, Frame>> = {
   atak: {
@@ -107,7 +107,7 @@ export function sizeFrame(f: Frame, sizeKey?: string, custom?: { w: number; h: n
   const s = f.landscape && picked.h > picked.w ? { w: picked.h, h: picked.w } : picked;
   const usable = s.w - (f.inset?.left ?? 0);
   const pane = f.pane === 'full' ? usable
-    : f.pane === 'half' ? Math.round(usable / 2)
+    : f.pane === 'half' ? Math.round(s.w / 2)
     // a fixed-width side panel can't be wider than the window it sits in
     : Math.min(f.pane, s.w - (f.dock === 'float' ? 48 : 0));
   return { ...f, w: s.w, h: s.h, pane };

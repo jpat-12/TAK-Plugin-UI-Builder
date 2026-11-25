@@ -56,7 +56,22 @@ onMounted(() => {
   if (stage.value) ro.observe(stage.value);
 });
 onBeforeUnmount(() => ro?.disconnect());
-const scale = computed(() => Math.min(1, (stageWidth.value - 24) / frame.value.w));
+// Rugged hardware drawn around the screen: a cased phone/tablet (bezel thicker on the short ends) or,
+// for desktop clients, a rugged laptop (lid bezel + a base that overhangs the lid by LAPTOP.overhang).
+const LAPTOP = { bezel: 28, chin: 34, overhang: 24, base: 64 };
+const shell = computed(() => {
+  const { chrome: c, w, h } = frame.value;
+  if (c === 'window') {
+    const left = LAPTOP.overhang + LAPTOP.bezel;
+    return { left, top: LAPTOP.bezel, w: w + 2 * left, h: h + LAPTOP.bezel + LAPTOP.chin + LAPTOP.base };
+  }
+  const [long, short] = c === 'phone' ? [36, 22] : [40, 30];
+  const [x, y] = w > h ? [long, short] : [short, long];
+  return { left: x, top: y, w: w + 2 * x, h: h + 2 * y };
+});
+const caseW = computed(() => shell.value.w);
+const caseH = computed(() => shell.value.h);
+const scale = computed(() => Math.min(1, (stageWidth.value - 24) / caseW.value));
 
 const ctx = computed(() => ({ project: store.project }));
 const s = computed(() => store.screen);
@@ -106,8 +121,22 @@ const paneTop = computed(() => top.value + (frame.value.toolbar ?? 0));
     </div>
 
     <div v-else ref="stage" class="stage" @click="store.select(null)">
-      <div class="fit" :style="{ width: frame.w * scale + 'px', height: frame.h * scale + 'px' }">
-        <div class="device" :class="frame.chrome" :style="{ width: frame.w + 'px', height: frame.h + 'px', transform: `scale(${scale})` }">
+      <div class="fit" :style="{ width: caseW * scale + 'px', height: caseH * scale + 'px' }">
+        <div class="case" :class="[frame.chrome, frame.w > frame.h ? 'land' : 'port']"
+          :style="{ width: caseW + 'px', height: caseH + 'px', transform: `scale(${scale})` }">
+        <template v-if="frame.chrome !== 'window'">
+          <!-- generic rugged case: grip panel on one end, hardware buttons on the long edge -->
+          <i class="grip-end" aria-hidden="true" />
+          <i class="hw b1" aria-hidden="true" /><i class="hw b2" aria-hidden="true" /><i class="hw b3" aria-hidden="true" />
+        </template>
+        <template v-else>
+          <!-- generic rugged laptop: bumpered lid, webcam, and the base with keyboard and carry handle -->
+          <div class="lid" aria-hidden="true" :style="{ left: LAPTOP.overhang + 'px', right: LAPTOP.overhang + 'px', height: frame.h + LAPTOP.bezel + LAPTOP.chin + 'px' }">
+            <i class="bump tl" /><i class="bump tr" /><i class="bump bl" /><i class="bump br" /><i class="webcam" />
+          </div>
+          <div class="deck" aria-hidden="true" :style="{ height: LAPTOP.base + 'px' }"><i class="keys" /><i class="handle" /></div>
+        </template>
+        <div class="device" :class="frame.chrome" :style="{ width: frame.w + 'px', height: frame.h + 'px', left: shell.left + 'px', top: shell.top + 'px' }">
           <div v-if="frame.chrome === 'window'" class="winbar"><i /><i /><i /><span>{{ frame.host }}</span></div>
           <div v-if="frame.topbar" class="hostbar" :class="target" :style="{ top: (frame.chrome === 'window' ? 30 : 0) + 'px', height: frame.topbar + 'px' }">
             <span class="launch" :title="`${entry.label} (your plugin's launch button)`">
@@ -146,6 +175,7 @@ const paneTop = computed(() => top.value + (frame.value.toolbar ?? 0));
             <div class="scroll"><CanvasNode :node="s.root" :ctx="ctx" is-root /></div>
           </div>
         </div>
+        </div>
       </div>
       <p class="note">{{ frame.w }}×{{ frame.h }} px screen, {{ frame.pane }} px panel<template v-if="scale < 1"> (shown at {{ Math.round(scale * 100) }}%)</template>. {{ TARGET_NAMES[target] }} look is approximate. It's for layout sanity, not pixel accuracy. Click empty space to deselect.</p>
     </div>
@@ -172,10 +202,40 @@ const paneTop = computed(() => top.value + (frame.value.toolbar ?? 0));
 .noskin { margin: 40px auto; max-width: 460px; text-align: center; color: var(--muted); }
 .stage { flex: 1; overflow: auto; padding: 28px; background: var(--stage); }
 .fit { margin: 0 auto; }
-.device { position: relative; transform-origin: 0 0; overflow: hidden; background: #111; }
-.device.tablet, .device.phone { border-radius: 14px; box-shadow: 0 0 0 10px #111, 0 10px 40px rgba(0,0,0,.4); }
-.device.phone { border-radius: 26px; }
-.device.window { border-radius: 8px; box-shadow: 0 0 0 1px #444, 0 10px 40px rgba(0,0,0,.4); }
+.case { position: relative; transform-origin: 0 0; }
+.device { position: absolute; overflow: hidden; background: #111; }
+/* rugged case (generic, drawn in CSS): dark rubberised shell, black glass rim, a tan grip panel on
+   one end and hardware buttons proud of the long edge */
+.case.phone, .case.tablet { border-radius: 46px; background: linear-gradient(160deg, #3d4044, #232528 60%, #1b1c1e);
+  box-shadow: inset 0 0 0 2px #50545a, inset 0 0 0 5px #1a1b1d, inset 0 -4px 10px rgba(0,0,0,.6), 0 16px 44px rgba(0,0,0,.45); }
+.case.tablet { border-radius: 36px; }
+.device.tablet, .device.phone { border-radius: 16px; box-shadow: 0 0 0 9px #070707, 0 0 0 10px #2c2e31; }
+.device.phone { border-radius: 22px; }
+.device.window { border-radius: 4px; box-shadow: 0 0 0 7px #070707, 0 0 0 8px #2c2e31; }
+.lid { position: absolute; top: 0; border-radius: 22px 22px 10px 10px; background: linear-gradient(160deg, #3d4044, #232528 60%, #1b1c1e);
+  box-shadow: inset 0 0 0 2px #50545a, inset 0 0 0 5px #1a1b1d, 0 16px 44px rgba(0,0,0,.45); }
+.bump { position: absolute; width: 58px; height: 58px; background: linear-gradient(160deg, #c4b49a, #a1917a 55%, #8a7b66); box-shadow: inset 0 0 0 2px rgba(255,255,255,.18); }
+.bump.tl { top: -6px; left: -6px; border-radius: 24px 6px 6px 6px; }
+.bump.tr { top: -6px; right: -6px; border-radius: 6px 24px 6px 6px; }
+.bump.bl { bottom: -6px; left: -6px; border-radius: 6px 6px 6px 14px; }
+.bump.br { bottom: -6px; right: -6px; border-radius: 6px 6px 14px 6px; }
+.webcam { position: absolute; top: 10px; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #0b0b0b; box-shadow: 0 0 0 2px #2c2e31; }
+.deck { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(#4a4d52, #2a2c2f 40%, #1c1d1f);
+  clip-path: polygon(24px 0, calc(100% - 24px) 0, 100% 78%, calc(100% - 14px) 100%, 14px 100%, 0 78%); }
+.deck .keys { position: absolute; left: 12%; right: 12%; top: 8px; height: 26px; border-radius: 3px;
+  background: repeating-linear-gradient(90deg, #17181a 0 22px, transparent 22px 26px), #0e0f10; opacity: .8; }
+.deck .handle { position: absolute; left: 50%; bottom: 6px; width: 30%; height: 12px; transform: translateX(-50%); border-radius: 6px;
+  background: linear-gradient(160deg, #c4b49a, #8a7b66); box-shadow: inset 0 0 0 2px rgba(255,255,255,.15); }
+.grip-end { position: absolute; background: linear-gradient(160deg, #c4b49a, #a1917a 55%, #8a7b66); box-shadow: inset 0 0 0 2px rgba(255,255,255,.18), inset 0 -4px 10px rgba(0,0,0,.35); }
+.land .grip-end { top: 0; bottom: 0; right: 0; width: 30%; border-radius: 0 46px 46px 0; }
+.port .grip-end { left: 0; right: 0; bottom: 0; height: 30%; border-radius: 0 0 46px 46px; }
+.case.tablet .grip-end { border-radius: 0 36px 36px 0; }
+.case.tablet.port .grip-end { border-radius: 0 0 36px 36px; }
+.hw { position: absolute; background: linear-gradient(#2a2c2f, #141516); border-radius: 3px; box-shadow: 0 0 0 1px #4a4d52; }
+.land .hw { top: -5px; height: 7px; }
+.land .b1 { left: 18%; width: 64px; } .land .b2 { left: 30%; width: 40px; } .land .b3 { right: 12%; width: 52px; }
+.port .hw { right: -5px; width: 7px; }
+.port .b1 { top: 18%; height: 64px; } .port .b2 { top: 30%; height: 40px; } .port .b3 { bottom: 12%; height: 52px; }
 .winbar { position: absolute; top: 0; left: 0; right: 0; height: 30px; background: #2a2a2e; display: flex; align-items: center; gap: 7px; padding: 0 10px; }
 .winbar i { width: 11px; height: 11px; border-radius: 50%; background: #555; }
 .winbar span { color: #aaa; font: 12px system-ui; margin-left: 10px; }

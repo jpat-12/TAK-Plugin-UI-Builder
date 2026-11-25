@@ -31,10 +31,10 @@ describe('screen-size presets', () => {
     expect(sizeFrame(FRAMES.webtak!.browser!, CUSTOM, { w: 300, h: 600 }).pane).toBe(252);
   });
 
-  it('turns phones sideways for the landscape ATAK frame and halves the map area, not the screen', () => {
+  it('turns phones sideways for the landscape ATAK frame and gives the plugin half the screen', () => {
     const f = FRAMES.atak!['phone-landscape']!;
-    // Pixel 7a-class phone: 915 wide, minus the 45 px camera cutout band, split in two
-    expect(sizeFrame(f)).toMatchObject({ w: 915, h: 412, pane: 435 });
+    // Pixel 7a-class phone: 915 wide, half of the whole screen (the cutout band doesn't shrink it)
+    expect(sizeFrame(f)).toMatchObject({ w: 915, h: 412, pane: 458 });
     expect(sizeFrame(f, 'small-phone')).toMatchObject({ w: 640, h: 360 });
     // a portrait custom size is turned too, since the phone frames share it
     expect(sizeFrame(f, CUSTOM, { w: 400, h: 900 })).toMatchObject({ w: 900, h: 400 });
