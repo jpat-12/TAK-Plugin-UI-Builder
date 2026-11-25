@@ -6,6 +6,7 @@ import { CUSTOM, FRAMES, SIZES, SIZE_MAX, SIZE_MIN, SKINNED, clampSize } from '.
 import { themeVars } from '../skins/theme';
 import { bannerFor } from '../skins/banner';
 import BannerView from '../skins/BannerView.vue';
+import AtakHost from '../skins/AtakHost.vue';
 import { TARGET_NAMES } from '../spec/validate';
 import type { Target } from '../spec/types';
 import { customSize, frameChoice, frameFor, frameKeyFor, previewTarget, sizeChoice, sizeKeyFor } from './view';
@@ -62,7 +63,11 @@ const s = computed(() => store.screen);
 const colors = computed(() => themeVars(store.project.theme));
 const entry = computed(() => store.project.entry);
 const banner = computed(() => bannerFor(store.project, s.value));
-const top = computed(() => (frame.value.chrome === 'window' ? 30 : 0) + (frame.value.topbar ?? 0));
+const ins = computed(() => frame.value.inset ?? { top: 0, left: 0, bottom: 0 });
+/** where the map starts: below a window title bar, a host ribbon or the phone's status bar */
+const top = computed(() => (frame.value.chrome === 'window' ? 30 : 0) + (frame.value.topbar ?? 0) + ins.value.top);
+/** ATAK panes open below its toolbar row */
+const paneTop = computed(() => top.value + (frame.value.toolbar ?? 0));
 </script>
 
 <template>
@@ -110,13 +115,17 @@ const top = computed(() => (frame.value.chrome === 'window' ? 30 : 0) + (frame.v
             </span>
             <span v-for="n in 5" :key="n" />
           </div>
-          <div class="map" :class="target" :style="{ top: top + 'px' }"><span>{{ target === 'takx' ? 'globe' : 'map' }}</span>
-            <div v-if="!frame.topbar" class="maptools" :title="`${entry.label} (your plugin's launch button)`">
+          <div class="map" :class="target" :style="{ top: top + 'px', left: ins.left + 'px', bottom: ins.bottom + 'px' }">
+            <span v-if="!frame.toolbar">{{ target === 'takx' ? 'globe' : 'map' }}</span>
+            <div v-if="!frame.topbar && !frame.toolbar" class="maptools" :title="`${entry.label} (your plugin's launch button)`">
               <div class="launch"><img v-if="entry.iconImage" :src="entry.iconImage" alt="" /><b v-else>{{ (entry.label || '?').slice(0, 1) }}</b></div>
             </div>
           </div>
 
-          <div v-if="s.surface === 'dialog'" class="dialog-wrap" :style="{ top: top + 'px' }">
+          <AtakHost v-if="frame.toolbar" :frame="frame" :pane="s.surface === 'dialog' ? 0 : frame.pane"
+            :launch-label="entry.label" :launch-icon="entry.iconImage" />
+
+          <div v-if="s.surface === 'dialog'" class="dialog-wrap" :style="{ top: top + 'px', bottom: ins.bottom + 'px' }">
             <div class="dialog skin" :class="'skin-' + target" :style="{ width: Math.min(frame.pane, 460) + 'px', ...colors }">
               <div class="d-title">{{ s.title }}</div>
               <div class="scroll"><CanvasNode :node="s.root" :ctx="ctx" is-root /></div>
@@ -128,7 +137,7 @@ const top = computed(() => (frame.value.chrome === 'window' ? 30 : 0) + (frame.v
           </div>
 
           <div v-else class="pane skin" data-tour="pane" :class="['skin-' + target, frame.dock]"
-            :style="{ width: frame.pane + 'px', top: frame.dock === 'float' ? top + 24 + 'px' : top + 'px', ...colors }">
+            :style="{ width: frame.pane + 'px', top: frame.dock === 'float' ? top + 24 + 'px' : paneTop + 'px', bottom: frame.dock === 'float' ? undefined : ins.bottom + 'px', ...colors }">
             <div class="p-title">
               <span>{{ s.surface === 'settings' ? (target === 'atak' ? `Settings › ${s.title}` : `${s.title} (settings)`) : s.title }}</span>
               <span class="x">✕</span>
@@ -180,6 +189,14 @@ const top = computed(() => (frame.value.chrome === 'window' ? 30 : 0) + (frame.v
 .hostbar.webtak { background: #1f2327; }
 .hostbar.takx { background: #262626; border-bottom: 1px solid #3a3a3a; }
 .hostbar.takx span { width: 58px; height: 64%; }
+/* ATAK: dark aerial-imagery tones with a couple of roads, under the host widgets */
+.map.atak { background-color: #3b4636; background-image:
+  linear-gradient(118deg, transparent 47%, rgba(205,195,170,.22) 47.3% 47.9%, transparent 48.2%),
+  linear-gradient(28deg, transparent 61%, rgba(205,195,170,.16) 61.2% 61.6%, transparent 61.9%),
+  radial-gradient(ellipse 30% 22% at 22% 30%, #2f3d2c, transparent 70%),
+  radial-gradient(ellipse 26% 30% at 70% 68%, #56604a, transparent 70%),
+  radial-gradient(ellipse 18% 14% at 52% 22%, #6b6a58, transparent 70%),
+  radial-gradient(ellipse 22% 18% at 35% 80%, #2b3a2e, transparent 70%); }
 /* TAKX opens on a 3D globe against space */
 .map.takx { background: radial-gradient(circle at 78% 115%, #2f6ea5 0 30%, #10263d 31%, #000 33%); }
 .map { position: absolute; inset: 0; background-color: #4a5a43;

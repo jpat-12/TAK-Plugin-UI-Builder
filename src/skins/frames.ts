@@ -18,6 +18,13 @@ export interface Frame {
   topbar?: number;
   /** what to call the host window in the frame's title bar */
   host?: string;
+  /** turn the size preset sideways (phones are portrait in SIZES) */
+  landscape?: boolean;
+  /** device areas the app can't draw in, px: status bar (top), camera cutout band (left, landscape
+   *  phones), gesture strip (bottom). Half/full panes are measured from the width that's left. */
+  inset?: { top: number; left: number; bottom: number };
+  /** height of ATAK's toolbar row: panes open below it, flush right */
+  toolbar?: number;
 }
 
 /** A frame at a concrete screen size: what the canvas and the mockups render */
@@ -57,11 +64,20 @@ export const SIZE_MAX = 3840;
 /** Targets with a preview skin (TAKX added 2026-11-10 from its 5.8.0 SDK screenshots) */
 export const SKINNED: readonly Target[] = ['atak', 'cloudtak', 'wintak', 'webtak', 'takx'];
 
+// ATAK insets and toolbar height are measured from ATAK 5.6 on a Pixel 7a (2400x1080 at 420 dpi,
+// i.e. 914x411 dp): 28 dp status bar, 45 dp cutout band in landscape, 24 dp gesture strip, 50 dp
+// toolbar row. A half pane is half of the map area, not of the whole screen. Tablets get the
+// status bar only (their nav lives in the taskbar).
+const ATAK_TABLET = { inset: { top: 24, left: 0, bottom: 0 }, toolbar: 48 };
 export const FRAMES: Record<string, Record<string, Frame>> = {
   atak: {
-    'tablet-half': { label: 'Tablet · half pane', chrome: 'tablet', size: 'tablet', pane: 'half', dock: 'right' },
-    'tablet-full': { label: 'Tablet · full pane', chrome: 'tablet', size: 'tablet', pane: 'full', dock: 'right' },
-    phone: { label: 'Phone · portrait', chrome: 'phone', size: 'phone', pane: 'full', dock: 'right' },
+    'tablet-half': { label: 'Tablet · half pane', chrome: 'tablet', size: 'tablet', pane: 'half', dock: 'right', ...ATAK_TABLET },
+    'tablet-full': { label: 'Tablet · full pane', chrome: 'tablet', size: 'tablet', pane: 'full', dock: 'right', ...ATAK_TABLET },
+    'phone-landscape': {
+      label: 'Phone · landscape, half pane', chrome: 'phone', size: 'big-phone', pane: 'half', dock: 'right',
+      landscape: true, inset: { top: 28, left: 45, bottom: 24 }, toolbar: 50,
+    },
+    phone: { label: 'Phone · portrait', chrome: 'phone', size: 'phone', pane: 'full', dock: 'right', inset: { top: 28, left: 0, bottom: 24 }, toolbar: 50 },
   },
   cloudtak: {
     browser: { label: 'Browser · side panel', chrome: 'window', size: 'laptop', pane: 420, dock: 'right', host: 'CloudTAK' },
@@ -84,11 +100,14 @@ export const clampSize = (n: number) => Math.round(Math.min(SIZE_MAX, Math.max(S
 /** Put a frame on a screen: a preset key, or 'custom' with a typed-in size. Unknown keys use the frame's default. */
 export function sizeFrame(f: Frame, sizeKey?: string, custom?: { w: number; h: number }): SizedFrame {
   const presets = SIZES[f.chrome];
-  const s = sizeKey === CUSTOM && custom
+  const picked = sizeKey === CUSTOM && custom
     ? { w: clampSize(custom.w), h: clampSize(custom.h) }
     : presets[sizeKey && sizeKey in presets ? sizeKey : f.size]!;
-  const pane = f.pane === 'full' ? s.w
-    : f.pane === 'half' ? Math.round(s.w / 2)
+  // phone sizes (presets and the typed-in one, shared with the portrait frame) are portrait
+  const s = f.landscape && picked.h > picked.w ? { w: picked.h, h: picked.w } : picked;
+  const usable = s.w - (f.inset?.left ?? 0);
+  const pane = f.pane === 'full' ? usable
+    : f.pane === 'half' ? Math.round(usable / 2)
     // a fixed-width side panel can't be wider than the window it sits in
     : Math.min(f.pane, s.w - (f.dock === 'float' ? 48 : 0));
   return { ...f, w: s.w, h: s.h, pane };
