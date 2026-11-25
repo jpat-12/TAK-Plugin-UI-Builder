@@ -6,11 +6,11 @@
 import { computed, nextTick, ref } from 'vue';
 import { toBlob } from 'html-to-image';
 import { useProject } from '../store/project';
-import { FRAMES, SKINNED } from '../skins/frames';
+import { SKINNED } from '../skins/frames';
 import { themeVars } from '../skins/theme';
 import { bannerFor } from '../skins/banner';
 import BannerView from '../skins/BannerView.vue';
-import { frameKeyFor } from '../canvas/view';
+import { frameFor } from '../canvas/view';
 import { TARGET_NAMES } from '../spec/validate';
 import type { Screen, Target } from '../spec/types';
 import CanvasNode from '../canvas/CanvasNode.vue';
@@ -38,7 +38,7 @@ const done = ref('');
 // ---- mockup rendering ----
 const job = ref<{ target: Target; screen: Screen; tab?: number } | null>(null);
 const stage = ref<HTMLElement | null>(null);
-const paneWidth = (t: Target) => Math.min(FRAMES[t]![frameKeyFor(t)]!.pane, 560);
+const paneWidth = (t: Target) => Math.min(frameFor(t).pane, 560);
 const frame = () => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 
 async function renderMockups(): Promise<RenderedMockup[]> {

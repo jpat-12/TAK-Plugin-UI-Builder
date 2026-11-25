@@ -16,6 +16,7 @@ Run before calling a phase done (and after any canvas/store change). `npm run de
 10. **Sample:** Samples → *Event CAD*. Tabs switch, the incident list shows 3 rows with different priority colors,
     the dialog screen renders as a pop-up, and Problems says "No problems".
 11. **Frames:** switch Tablet half → full → Phone. The pane resizes and nothing overflows sideways.
+   **Screen size:** pick Big phone → Small phone, then a desktop platform at Big screen computer → Small laptop, then Custom size… and type 900 × 600. The device and panel resize, the note under the canvas shows the px size, and the choice survives a reload.
 12. **Platforms:** open the Incident Report template and switch ATAK → WinTAK → CloudTAK. Each has its own look and frame.
 13. **Spelling:** change a button's text to "Sned". It shows in the inspector and bottom bar. Click the word, then "send". Fixed.
 14. **Renames carry through:** in Status Board, rename the list item field `team › status` to `state`. The badge in the row stays connected, with no errors.

@@ -2,13 +2,13 @@
 // Center column: screen tabs + the selected screen inside the previewed platform's frame.
 import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
 import { useProject } from '../store/project';
-import { FRAMES, SKINNED } from '../skins/frames';
+import { CUSTOM, FRAMES, SIZES, SIZE_MAX, SIZE_MIN, SKINNED, clampSize } from '../skins/frames';
 import { themeVars } from '../skins/theme';
 import { bannerFor } from '../skins/banner';
 import BannerView from '../skins/BannerView.vue';
 import { TARGET_NAMES } from '../spec/validate';
 import type { Target } from '../spec/types';
-import { frameChoice, frameKeyFor, previewTarget } from './view';
+import { customSize, frameChoice, frameFor, frameKeyFor, previewTarget, sizeChoice, sizeKeyFor } from './view';
 import CanvasNode from './CanvasNode.vue';
 import '../skins/base.css';
 import '../skins/themes/atak.css';
@@ -27,8 +27,24 @@ watchEffect(() => {
 const target = computed<Target>(() => previewTarget.value);
 const frames = computed(() => FRAMES[target.value] ?? {});
 const frameKey = computed(() => frameKeyFor(target.value));
-const frame = computed(() => frames.value[frameKey.value]!);
+const frame = computed(() => frameFor(target.value));
 const setFrame = (k: string) => { frameChoice.value = { ...frameChoice.value, [target.value]: k }; };
+
+// screen size: a preset for this kind of device, or a typed-in width × height
+const sizes = computed(() => SIZES[frame.value.chrome]);
+const sizeKey = computed(() => sizeKeyFor(frame.value.chrome, FRAMES[target.value]![frameKey.value]!.size));
+const setSize = (k: string) => {
+  const c = frame.value.chrome;
+  // starting a custom size from the one on screen is less surprising than a jump
+  if (k === CUSTOM && !customSize.value[c]) customSize.value = { ...customSize.value, [c]: { w: frame.value.w, h: frame.value.h } };
+  sizeChoice.value = { ...sizeChoice.value, [c]: k };
+};
+const setCustom = (dim: 'w' | 'h', v: string) => {
+  const c = frame.value.chrome;
+  const n = Number(v);
+  if (!v || !Number.isFinite(n)) return;
+  customSize.value = { ...customSize.value, [c]: { w: frame.value.w, h: frame.value.h, [dim]: clampSize(n) } };
+};
 
 // scale the device to fit the column (transform, not CSS zoom: zoom breaks hit-testing in some browsers)
 const stage = ref<HTMLElement | null>(null);
@@ -66,6 +82,16 @@ const top = computed(() => (frame.value.chrome === 'window' ? 30 : 0) + (frame.v
         <select v-if="Object.keys(frames).length > 1" class="frame" :value="frameKey" aria-label="Device frame" @change="setFrame(($event.target as HTMLSelectElement).value)">
           <option v-for="(f, k) in frames" :key="k" :value="k">{{ f.label }}</option>
         </select>
+        <select class="frame" :value="sizeKey" aria-label="Screen size" @change="setSize(($event.target as HTMLSelectElement).value)">
+          <option v-for="(z, k) in sizes" :key="k" :value="k">{{ z.label }} · {{ z.w }}×{{ z.h }}</option>
+          <option :value="CUSTOM">Custom size…</option>
+        </select>
+        <span v-if="sizeKey === CUSTOM" class="custom">
+          <input type="number" :min="SIZE_MIN" :max="SIZE_MAX" step="10" :value="frame.w" aria-label="Screen width in pixels" @change="setCustom('w', ($event.target as HTMLInputElement).value)" />
+          ×
+          <input type="number" :min="SIZE_MIN" :max="SIZE_MAX" step="10" :value="frame.h" aria-label="Screen height in pixels" @change="setCustom('h', ($event.target as HTMLInputElement).value)" />
+          px
+        </span>
       </span>
     </div>
 
@@ -112,7 +138,7 @@ const top = computed(() => (frame.value.chrome === 'window' ? 30 : 0) + (frame.v
           </div>
         </div>
       </div>
-      <p class="note">{{ TARGET_NAMES[target] }} look is approximate. It's for layout sanity, not pixel accuracy. Click empty space to deselect.</p>
+      <p class="note">{{ frame.w }}×{{ frame.h }} px screen, {{ frame.pane }} px panel<template v-if="scale < 1"> (shown at {{ Math.round(scale * 100) }}%)</template>. {{ TARGET_NAMES[target] }} look is approximate. It's for layout sanity, not pixel accuracy. Click empty space to deselect.</p>
     </div>
   </div>
 </template>
@@ -132,6 +158,8 @@ const top = computed(() => (frame.value.chrome === 'window' ? 30 : 0) + (frame.v
 .seg button + button { border-left: 1px solid var(--line); }
 .seg button.on { background: var(--accent); color: #fff; }
 .frame { font: inherit; font-size: 12px; padding: 3px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); }
+.custom { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: var(--muted); }
+.custom input { width: 62px; font: inherit; font-size: 12px; padding: 3px 4px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); }
 .noskin { margin: 40px auto; max-width: 460px; text-align: center; color: var(--muted); }
 .stage { flex: 1; overflow: auto; padding: 28px; background: var(--stage); }
 .fit { margin: 0 auto; }

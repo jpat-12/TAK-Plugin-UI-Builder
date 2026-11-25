@@ -79,7 +79,7 @@ src/
   app/                        App.vue (shell + shortcuts), TopBar, ProblemsBar (issues + spelling),
                               TemplateGallery ("New…"), ui.ts (shared panel state + tour signals)
   palette/Palette.vue         catalog as drag sources; click adds at the selection (touch-friendly)
-  canvas/                     Canvas (screen tabs, platform switch, frames, scale-to-fit), CanvasNode (select/
+  canvas/                     Canvas (screen tabs, platform switch, frames, screen-size presets, scale-to-fit), CanvasNode (select/
                               drag/forgiving drops/layout), DropSlot, dnd.ts (why native DnD), view.ts (preview target)
   skins/                      SkinElement.vue (one renderer for all platforms), base.css (shared structure),
                               themes/{atak,cloudtak,wintak,webtak}.css, frames.ts, preview.ts (sample values)
